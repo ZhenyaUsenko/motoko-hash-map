@@ -1,0 +1,8 @@
+{
+  "canisters": {
+    "hash_map": {
+      "main": "src/main.mo",
+      "type": "motoko"
+    }
+  }
+}
