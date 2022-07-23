@@ -1,24 +1,19 @@
 module {
-  public type Key = {
-    #principal: Principal;
-    #text: Text;
-    #nat: Nat;
-    #int: Int;
-  };
+  public type Key = { #principal: Principal; #text: Text; #nat: Nat; #int: Int };
 
-  public type Item<V> = {
-    var key: ?Key;
-    var value: ?V;
-    var next: ?Item<V>;
-    hash: Nat32;
-  };
+  public type Value<V> = V;
+  public type Hash = Nat32;
+  public type NextIndex = Nat32;
 
-  public type Map<V> = {
-    var buckets: [var ?Item<V>];
-    var data: [var ?Item<V>];
-    var bucketsSize: Nat32;
-    var dataSize: Nat32;
-    var actualSize: Nat32;
-    var size: Nat32;
-  };
+  public type Item<V> = { #item: (Key, Value<V>, Hash, NextIndex); #nextIndex: NextIndex };
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  public type Buckets = [var Nat32];
+  public type Data<V> = [var Item<V>];
+  public type Capacity = Nat32;
+  public type TakenSize = Nat32;
+  public type Size = Nat32;
+
+  public type Map<V> = { var data: (Buckets, Data<V>, Capacity, TakenSize, Size) };
 };

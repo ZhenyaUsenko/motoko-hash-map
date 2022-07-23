@@ -32,21 +32,6 @@ shared actor class HashMap() {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  func itemToShared(item: ?Map.Item<Nat>): ?Item<Nat> {
-    return switch (item) {
-      case (?item) return ?{
-        key = item.key;
-        value = item.value;
-        hash = item.hash;
-        next = itemToShared(item.next);
-      };
-
-      case (_) return null;
-    };
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   public query func test(): async Nat64 {
     return IC.countInstructions(func() {
       let map = Map.new<Nat>();
