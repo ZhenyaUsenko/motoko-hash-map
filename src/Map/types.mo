@@ -15,5 +15,5 @@ module {
   public type TakenSize = Nat32;
   public type Size = Nat32;
 
-  public type Map<V> = { var data: (Buckets, Data<V>, Capacity, TakenSize, Size) };
+  public type Map<V> = { var map: (Buckets, Data<V>, Capacity, TakenSize, Size) };
 };
