@@ -1,6 +1,10 @@
-import Map "./Map";
 import Array "mo:base/Array";
+import IC "mo:base/ExperimentalInternetComputer";
 import Hash "mo:base/Hash";
+import Nat "mo:base/Nat";
+import Iter "mo:base/Iter";
+import Map "./Map";
+import Tree "./StableRBTree";
 
 shared actor class HashMap() {
   type Key = {
@@ -13,16 +17,20 @@ shared actor class HashMap() {
   type Item<V> = {
     key: ?Key;
     value: ?V;
-    hash: ?Hash.Hash;
+    hash: Nat32;
     next: ?Item<V>;
   };
 
   type Map<V> = {
     buckets: [?Item<V>];
     data: [?Item<V>];
+    bucketsSize: Nat32;
+    dataSize: Nat32;
     actualSize: Nat;
     size: Nat;
   };
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   func itemToShared(item: ?Map.Item<Nat>): ?Item<Nat> {
     return switch (item) {
@@ -37,25 +45,27 @@ shared actor class HashMap() {
     };
   };
 
-  public query func test(): async Map<Nat> {
-    let map = Map.new<Nat>();
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    Map.set(map, #nat 1, 1);
-    Map.set(map, #nat 2, 2);
-    Map.set(map, #nat 3, 3);
-    Map.set(map, #nat 4, 4);
-    Map.set(map, #nat 5, 5);
+  public query func test(): async Nat64 {
+    return IC.countInstructions(func() {
+      let map = Map.new<Nat>();
 
-    Map.delete(map, #nat 2);
-    Map.delete(map, #nat 3);
-    Map.delete(map, #nat 4);
-    Map.delete(map, #nat 5);
+      for (item in Iter.range(0, 100000)) Map.set(map, #nat item, item);
 
-    return {
-      buckets = Array.map(Array.freeze(map.buckets), itemToShared);
-      data = Array.map(Array.freeze(map.data), itemToShared);
-      actualSize = map.actualSize;
-      size = map.size;
-    };
+      for (item in Iter.range(0, 100000)) Map.set(map, #nat item, item + 1);
+    });
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  public query func testTree(): async Nat64 {
+    return IC.countInstructions(func() {
+      var tree = Tree.init<Nat, Nat>();
+
+      for (item in Iter.range(0, 100000)) tree := Tree.put(tree, Nat.compare, item, item);
+
+      for (item in Iter.range(0, 100000)) tree := Tree.put(tree, Nat.compare, item, item + 1);
+    });
   };
 };

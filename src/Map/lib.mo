@@ -1,7 +1,5 @@
 import Array "mo:base/Array";
-import Hash "mo:base/Hash";
 import Int "mo:base/Int";
-import Nat "mo:base/Nat";
 import Nat32 "mo:base/Nat32";
 import Option "mo:base/Option";
 import Principal "mo:base/Principal";
@@ -15,7 +13,7 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   
-  func getHash(key: Types.Key): Hash.Hash {
+  func getHash(key: Types.Key): Nat32 {
     return switch (key) {
       case (#principal key) Principal.hash(key);
       case (#text key) Text.hash(key);
@@ -28,28 +26,26 @@ module {
 
   func rehash<V>(map: Types.Map<V>) {
     let prevData = map.data;
-    let capacity = prevData.size();
-    let newCapacity = if (map.size < capacity / 4) Nat.max(capacity / 2, 4) else if (map.size >= capacity / 4 * 3) capacity * 2 else capacity;
-    let newBucketsSize = newCapacity / 2;
+    let dataSize = map.dataSize;
+    let newDataSize = if (map.size < dataSize / 4) Nat32.max(dataSize / 2, 4) else if (map.size >= dataSize / 4 * 3) dataSize * 2 else dataSize;
+    let newBucketsSize = newDataSize / 2;
 
-    map.buckets := Array.init(newBucketsSize, null);
-    map.data := Array.init(newCapacity, null);
+    map.buckets := Array.init(Nat32.toNat(newBucketsSize), null);
+    map.data := Array.init(Nat32.toNat(newDataSize), null);
+    map.bucketsSize := newBucketsSize;
+    map.dataSize := newDataSize;
     map.actualSize := 0;
 
     label dataLoop for (item in prevData.vals()) switch (item) {
-      case (?item) switch (item.key, item.hash) {
-        case (?key, ?hash) {
-          let bucketIndex = Nat32.toNat(hash) % newBucketsSize;
+      case (?item) if (item.key != null) {
+        let bucketIndex = Nat32.toNat(item.hash % newBucketsSize);
 
-          item.next := map.buckets[bucketIndex];
+        item.next := map.buckets[bucketIndex];
 
-          map.buckets[bucketIndex] := ?item;
-          map.data[map.actualSize] := ?item;
+        map.buckets[bucketIndex] := ?item;
+        map.data[Nat32.toNat(map.actualSize)] := ?item;
 
-          map.actualSize += 1;
-        };
-
-        case (_) {};
+        map.actualSize += 1;
       };
 
       case (_) break dataLoop;
@@ -62,6 +58,8 @@ module {
     return {
       var buckets = Array.init(2, null);
       var data = Array.init(4, null);
+      var bucketsSize = 2;
+      var dataSize = 4;
       var actualSize = 0;
       var size = 0;
     };
@@ -70,7 +68,7 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func get<V>(map: Types.Map<V>, key: Types.Key): ?V {
-    var nextItem = map.buckets[Nat32.toNat(getHash(key)) % map.buckets.size()];
+    var nextItem = map.buckets[Nat32.toNat(getHash(key) % map.bucketsSize)];
 
     loop switch (nextItem) {
       case (?item) {
@@ -87,7 +85,7 @@ module {
 
   public func replace<V>(map: Types.Map<V>, key: Types.Key, value: V): ?V {
     let hash = getHash(key);
-    let firstItem = map.buckets[Nat32.toNat(hash) % map.buckets.size()];
+    let firstItem = map.buckets[Nat32.toNat(hash % map.bucketsSize)];
     var nextItem = firstItem;
 
     loop switch (nextItem) {
@@ -104,12 +102,12 @@ module {
       };
 
       case (_) {
-        let newItem: ?Types.Item<V> = ?{ var key = ?key; var value = ?value; var hash = ?hash; var next = firstItem };
+        let newItem: ?Types.Item<V> = ?{ var key = ?key; var value = ?value; var next = firstItem; hash = hash };
 
-        if (map.actualSize == map.data.size()) rehash(map);
+        if (map.actualSize == map.dataSize) rehash(map);
 
-        map.buckets[Nat32.toNat(hash) % map.buckets.size()] := newItem;
-        map.data[map.actualSize] := newItem;
+        map.buckets[Nat32.toNat(hash % map.bucketsSize)] := newItem;
+        map.data[Nat32.toNat(map.actualSize)] := newItem;
         map.actualSize += 1;
         map.size += 1;
 
@@ -121,7 +119,7 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func remove<V>(map: Types.Map<V>, key: Types.Key): ?V {
-    var nextItem = map.buckets[Nat32.toNat(getHash(key)) % map.buckets.size()];
+    var nextItem = map.buckets[Nat32.toNat(getHash(key) % map.bucketsSize)];
 
     loop switch (nextItem) {
       case (?item) {
@@ -130,11 +128,10 @@ module {
 
           item.key := null;
           item.value := null;
-          item.hash := null;
 
           map.size -= 1;
 
-          if (map.size < map.data.size() / 4) rehash(map);
+          if (map.size < map.dataSize / 4) rehash(map);
 
           return prevValue;
         };
