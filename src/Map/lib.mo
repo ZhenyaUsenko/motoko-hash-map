@@ -189,7 +189,7 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func mapFilter<V1, V2>(map: Map<V1>, fn: (value: V1, key: Key) -> ?V2): Map<V2> {
-    let (_, data, capacity, _, size) = map.body;
+    let (_, data, capacity, _, _) = map.body;
 
     let newData: [var Types.Slot<V2>] = Array.init(toNat(capacity), #nextIndex (0:Nat32));
     var newCapacity = 2:Nat32;

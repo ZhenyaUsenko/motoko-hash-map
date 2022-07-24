@@ -164,7 +164,7 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func filter(map: Set, fn: (key: Key) -> Bool): Set {
-    let (_, data, capacity, _, size) = map.body;
+    let (_, data, capacity, _, _) = map.body;
 
     let newData: [var Types.Slot] = Array.init(toNat(capacity), #nextIndex (0:Nat32));
     var newCapacity = 2:Nat32;
