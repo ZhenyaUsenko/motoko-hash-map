@@ -64,9 +64,10 @@ module {
         let bucketIndex = toNat(hash % newCapacity);
 
         newData[toNat(newTakenSize)] := #item (key, value, hash, newBuckets[bucketIndex]);
-        newBuckets[bucketIndex] := newTakenSize + 1;
 
         newTakenSize += 1;
+
+        newBuckets[bucketIndex] := newTakenSize;
       };
 
       case (_) {};
@@ -82,32 +83,39 @@ module {
 
     var index = buckets[toNat(getHash(key) % capacity)];
 
-    loop if (index != 0) {
-      let dataIndex = toNat(index - 1);
+    loop if (index == 0) return null else switch (data[toNat(index - 1)]) {
+      case (#item (itemKey, value, _, nextIndex)) {
+        if (itemKey == key) return ?value;
 
-      switch (data[dataIndex]) {
-        case (#item (itemKey, value, _, nextIndex)) {
-          if (itemKey == key) return ?value;
-
-          index := nextIndex;
-        };
-
-        case (#nextIndex nextIndex) index := nextIndex;
+        index := nextIndex;
       };
-    } else {
-      return null;
+
+      case (#nextIndex nextIndex) index := nextIndex;
     };
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func put<V>(map: Map<V>, key: Key, value: V): ?V {
-    let (buckets, data, prevCapacity, prevTakenSize, _) = map.body;
+    let (buckets, data, capacity, takenSize, size) = map.body;
 
     let hash = getHash(key);
-    var index = buckets[toNat(hash % prevCapacity)];
+    let bucketIndex = toNat(hash % capacity);
+    let firstIndex = buckets[bucketIndex];
+    var index = firstIndex;
 
-    loop if (index != 0) {
+    loop if (index == 0) {
+      let newTakenSize = takenSize + 1;
+
+      data[toNat(takenSize)] := #item (key, value, hash, firstIndex);
+      buckets[bucketIndex] := newTakenSize;
+
+      map.body := (buckets, data, capacity, newTakenSize, size + 1);
+
+      if (newTakenSize == capacity) rehash(map);
+
+      return null;
+    } else {
       let dataIndex = toNat(index - 1);
 
       switch (data[dataIndex]) {
@@ -123,19 +131,6 @@ module {
 
         case (#nextIndex nextIndex) index := nextIndex;
       };
-    } else {
-      if (prevTakenSize == prevCapacity) rehash(map);
-
-      let (buckets, data, capacity, takenSize, size) = map.body;
-
-      let bucketIndex = toNat(hash % capacity);
-
-      data[toNat(takenSize)] := #item (key, value, hash, buckets[bucketIndex]);
-      buckets[bucketIndex] := takenSize + 1;
-
-      map.body := (buckets, data, capacity, takenSize + 1, size + 1);
-
-      return null;
     };
   };
 
@@ -146,17 +141,19 @@ module {
 
     var index = buckets[toNat(getHash(key) % capacity)];
 
-    loop if (index != 0)  {
+    loop if (index == 0) return null else {
       let dataIndex = toNat(index - 1);
 
       switch (data[dataIndex]) {
         case (#item (itemKey, value, _, nextIndex)) {
           if (itemKey == key) {
+            let newSize = size - 1;
+
             data[dataIndex] := #nextIndex nextIndex;
 
-            map.body := (buckets, data, capacity, takenSize, size - 1);
+            map.body := (buckets, data, capacity, takenSize, newSize);
 
-            if (size - 1 < capacity / 4) rehash(map);
+            if (newSize < capacity / 4) rehash(map);
 
             return ?value;
           };
@@ -166,8 +163,6 @@ module {
 
         case (#nextIndex nextIndex) index := nextIndex;
       };
-    } else {
-      return null;
     };
   };
 

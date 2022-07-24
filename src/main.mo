@@ -39,7 +39,19 @@ shared actor class HashMap() {
 
       for (item in Iter.range(0, 100000)) Map.set(map, #nat item, item);
 
-      for ((key, _) in Map.entries(map)) Map.set(map, key, 0);
+      for (item in Iter.range(0, 100000)) Map.set(map, #nat item, item + 1);
+    });
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  public query func testSetPerf(): async Nat64 {
+    return IC.countInstructions(func() {
+      let set = Set.new();
+
+      for (item in Iter.range(0, 100000)) Set.add(set, #nat item);
+
+      for (item in Iter.range(0, 100000)) Set.add(set, #nat item);
     });
   };
 };

@@ -2,7 +2,6 @@ import Array "mo:base/Array";
 import Int "mo:base/Int";
 import Iter "mo:base/Iter";
 import Nat32 "mo:base/Nat32";
-import Option "mo:base/Option";
 import Principal "mo:base/Principal";
 import Text "mo:base/Text";
 import Types "./types";
@@ -64,9 +63,10 @@ module {
         let bucketIndex = toNat(hash % newCapacity);
 
         newData[toNat(newTakenSize)] := #item (key, hash, newBuckets[bucketIndex]);
-        newBuckets[bucketIndex] := newTakenSize + 1;
 
         newTakenSize += 1;
+
+        newBuckets[bucketIndex] := newTakenSize;
       };
 
       case (_) {};
@@ -82,7 +82,39 @@ module {
 
     var index = buckets[toNat(getHash(key) % capacity)];
 
-    loop if (index != 0) {
+    loop if (index == 0) return false else switch (data[toNat(index - 1)]) {
+      case (#item (itemKey, _, nextIndex)) {
+        if (itemKey == key) return true;
+
+        index := nextIndex;
+      };
+
+      case (#nextIndex nextIndex) index := nextIndex;
+    };
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  public func put(map: Set, key: Key): Bool {
+    let (buckets, data, capacity, takenSize, size) = map.body;
+
+    let hash = getHash(key);
+    let bucketIndex = toNat(hash % capacity);
+    let firstIndex = buckets[bucketIndex];
+    var index = firstIndex;
+
+    loop if (index == 0) {
+      let newTakenSize = takenSize + 1;
+
+      data[toNat(takenSize)] := #item (key, hash, firstIndex);
+      buckets[bucketIndex] := newTakenSize;
+
+      map.body := (buckets, data, capacity, newTakenSize, size + 1);
+
+      if (newTakenSize == capacity) rehash(map);
+
+      return false;
+    } else {
       let dataIndex = toNat(index - 1);
 
       switch (data[dataIndex]) {
@@ -94,44 +126,6 @@ module {
 
         case (#nextIndex nextIndex) index := nextIndex;
       };
-    } else {
-      return false;
-    };
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  public func put(map: Set, key: Key): Bool {
-    let (buckets, data, prevCapacity, prevTakenSize, _) = map.body;
-
-    let hash = getHash(key);
-    var index = buckets[toNat(hash % prevCapacity)];
-
-    loop if (index != 0) {
-      let dataIndex = toNat(index - 1);
-
-      switch (data[dataIndex]) {
-        case (#item (itemKey, hash, nextIndex)) {
-          if (itemKey == key) return true;
-
-          index := nextIndex;
-        };
-
-        case (#nextIndex nextIndex) index := nextIndex;
-      };
-    } else {
-      if (prevTakenSize == prevCapacity) rehash(map);
-
-      let (buckets, data, capacity, takenSize, size) = map.body;
-
-      let bucketIndex = toNat(hash % capacity);
-
-      data[toNat(takenSize)] := #item (key, hash, buckets[bucketIndex]);
-      buckets[bucketIndex] := takenSize + 1;
-
-      map.body := (buckets, data, capacity, takenSize + 1, size + 1);
-
-      return false;
     };
   };
 
@@ -142,17 +136,19 @@ module {
 
     var index = buckets[toNat(getHash(key) % capacity)];
 
-    loop if (index != 0)  {
+    loop if (index == 0) return false else {
       let dataIndex = toNat(index - 1);
 
       switch (data[dataIndex]) {
         case (#item (itemKey, _, nextIndex)) {
           if (itemKey == key) {
+            let newSize = size - 1;
+
             data[dataIndex] := #nextIndex nextIndex;
 
-            map.body := (buckets, data, capacity, takenSize, size - 1);
+            map.body := (buckets, data, capacity, takenSize, newSize);
 
-            if (size - 1 < capacity / 4) rehash(map);
+            if (newSize < capacity / 4) rehash(map);
 
             return true;
           };
@@ -162,8 +158,6 @@ module {
 
         case (#nextIndex nextIndex) index := nextIndex;
       };
-    } else {
-      return false;
     };
   };
 
