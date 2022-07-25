@@ -17,18 +17,6 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func hashText(text: Text): Nat32 {
-    var hash = 3323198485:Nat32;
-
-    for (char in text.chars()) {
-      hash := hash ^ Prim.charToNat32(char);
-      hash := hash *% 0x5bd1e995;
-      hash := hash ^ (hash >> 15);
-    };
-
-    return hash;
-  };
-
-  public func hashText2(text: Text): Nat32 {
     var hash = 0:Nat32;
 
     for (char in text.chars()) {
