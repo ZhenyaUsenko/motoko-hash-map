@@ -13,7 +13,7 @@ module {
 
   func getHash(key: Key): Nat32 {
     return switch (key) {
-      case (#principal key) Prim.hashBlob(Prim.blobOfPrincipal(key));
+      case (#principal key) Prim.hashBlob(Prim.blobOfPrincipal(key)) & 0x3fffffff;
       case (#text key) Hash.hashText(key);
       case (#nat key) Hash.hashInt(key);
       case (#int key) Hash.hashInt(key);

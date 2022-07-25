@@ -29,6 +29,6 @@ module {
     hash := hash ^ (hash >> 11);
     hash := hash +% (hash << 15);
 
-    return hash;
+    return hash & 0x3fffffff;
   };
 };
