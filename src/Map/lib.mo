@@ -1,26 +1,22 @@
-import Array "mo:base/Array";
-import Int "mo:base/Int";
 import Iter "mo:base/Iter";
-import Nat32 "mo:base/Nat32";
-import Option "mo:base/Option";
-import Principal "mo:base/Principal";
-import Text "mo:base/Text";
+import Prim "mo:prim";
 import Types "./types";
+import Hash "../hash"
 
 module {
   public type Key = Types.Key;
   public type Map<V> = Types.Map<V>;
 
-  let { toNat } = Nat32;
+  let toNat = Prim.nat32ToNat;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   func getHash(key: Key): Nat32 {
     return switch (key) {
-      case (#principal key) Principal.hash(key);
-      case (#text key) Text.hash(key);
-      case (#nat key) Int.hash(key);
-      case (#int key) Int.hash(key);
+      case (#principal key) Prim.hashBlob(Prim.blobOfPrincipal(key));
+      case (#text key) Hash.hashText(key);
+      case (#nat key) Hash.hashInt(key);
+      case (#int key) Hash.hashInt(key);
     };
   };
 
@@ -56,8 +52,8 @@ module {
     let newCapacity = if (size < capacity / 4) capacity / 2 else if (size > capacity * 3 / 4) capacity * 2 else capacity;
     var newTakenSize = 0:Nat32;
 
-    let newBuckets: [var Nat32] = Array.init(toNat(newCapacity), 0:Nat32);
-    let newData: [var Types.Slot<V>] = Array.init(toNat(newCapacity), #nextIndex (0:Nat32));
+    let newBuckets: [var Nat32] = Prim.Array_init(toNat(newCapacity), 0:Nat32);
+    let newData: [var Types.Slot<V>] = Prim.Array_init(toNat(newCapacity), #nextIndex (0:Nat32));
 
     for (item in data.vals()) switch (item) {
       case (#item (key, value, hash, _)) {
@@ -171,8 +167,8 @@ module {
   public func map<V1, V2>(map: Map<V1>, fn: (value: V1, key: Key) -> V2): Map<V2> {
     let (buckets, data, capacity, takenSize, size) = map.body;
 
-    let newBuckets: [var Nat32] = Array.init(toNat(capacity), 0:Nat32);
-    let newData: [var Types.Slot<V2>] = Array.init(toNat(capacity), #nextIndex (0:Nat32));
+    let newBuckets: [var Nat32] = Prim.Array_init(toNat(capacity), 0:Nat32);
+    let newData: [var Types.Slot<V2>] = Prim.Array_init(toNat(capacity), #nextIndex (0:Nat32));
 
     for (index in buckets.keys()) {
       newBuckets[index] := buckets[index];
@@ -191,7 +187,7 @@ module {
   public func mapFilter<V1, V2>(map: Map<V1>, fn: (value: V1, key: Key) -> ?V2): Map<V2> {
     let (_, data, capacity, _, _) = map.body;
 
-    let newData: [var Types.Slot<V2>] = Array.init(toNat(capacity), #nextIndex (0:Nat32));
+    let newData: [var Types.Slot<V2>] = Prim.Array_init(toNat(capacity), #nextIndex (0:Nat32));
     var newCapacity = 2:Nat32;
     var newSize = 0:Nat32;
 
@@ -221,11 +217,11 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func new<V>(): Map<V> {
-    return { var body = (Array.init(2, 0:Nat32), Array.init(2, #nextIndex (0:Nat32)), 2, 0, 0) };
+    return { var body = (Prim.Array_init(2, 0:Nat32), Prim.Array_init(2, #nextIndex (0:Nat32)), 2, 0, 0) };
   };
 
   public func clear<V>(map: Map<V>) {
-    map.body := (Array.init(2, 0:Nat32), Array.init(2, #nextIndex (0:Nat32)), 2, 0, 0);
+    map.body := (Prim.Array_init(2, 0:Nat32), Prim.Array_init(2, #nextIndex (0:Nat32)), 2, 0, 0);
   };
 
   public func size<V>(map: Map<V>): Nat {
@@ -233,7 +229,7 @@ module {
   };
 
   public func has<V>(map: Map<V>, key: Key): Bool {
-    return Option.isSome(get(map, key));
+    return switch (get(map, key)) { case (null) false; case (_) true };
   };
 
   public func set<V>(map: Map<V>, key: Key, value: V) {
