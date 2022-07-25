@@ -7,41 +7,46 @@ import Nat "mo:base/Nat";
 import Principal "mo:base/Principal";
 import Map "mo:map/Map";
 
-let map = Map.new<Nat>();
+let { nhash; thash; phash } = Map;
 
-Map.set(map, #nat 1, 1);
-Map.set(map, #int (-1), 2);
-Map.set(map, #text "aaa", 3);
-Map.set(map, #principal (Principal.fromText("aaaaa-aa")), 4);
+let map1 = Map.new<Nat, Nat>();
+let map2 = Map.new<Int, Nat>();
+let map3 = Map.new<Text, Nat>();
+let map4 = Map.new<Principal, Nat>();
 
-ignore Map.put(map, #text "bbb", 5);
-ignore Map.put(map, #text "ccc", 6);
+Map.set(map1, nhash, 1, 1);
+Map.set(map2, nhash, -1, 2);
+Map.set(map3, thash, "aaa", 3);
+Map.set(map4, phash, Principal.fromText("aaaaa-aa"), 4);
 
-ignore Map.has(map, #nat 1);
+ignore Map.put(map3, thash, "bbb", 5);
+ignore Map.put(map3, thash, "ccc", 6);
 
-ignore Map.get(map, #int (-1));
+ignore Map.has(map1, nhash, 1);
 
-ignore Map.size(map);
+ignore Map.get(map2, nhash, -1);
 
-Map.delete(map, #text "bbb");
+ignore Map.size(map3);
 
-ignore Map.remove(map, #text "ccc");
+Map.delete(map3, thash, "bbb");
 
-for (key in Map.keys(map)) {};
-for (value in Map.vals(map)) {};
-for ((key, value) in Map.entries(map)) {};
+ignore Map.remove(map3, thash, "ccc");
 
-let map2 = Map.filter(map, func(value: Nat, key: Map.Key): Bool {
-  return switch (key) { case (#text _) true; case (_) false };
+for (key in Map.keys(map1)) {};
+for (value in Map.vals(map1)) {};
+for ((key, value) in Map.entries(map1)) {};
+
+let map5 = Map.filter(map2, func(key: Int, value: Nat): Bool {
+  return key != 1;
 });
 
-let map3: Map.Map<Text> = Map.map(map, func(value: Nat, key: Map.Key): Text {
+let map6: Map.Map<Nat, Text> = Map.map(map1, func(key: Nat, value: Nat): Text {
   return Nat.toText(value);
 });
 
-let map4: Map.Map<Text> = Map.mapFilter(map, func(value: Nat, key: Map.Key): ?Text {
-  return switch (key) { case (#text _) ?Nat.toText(value); case (_) null };
+let map7: Map.Map<Nat, Text> = Map.mapFilter(map1, func(key: Nat, value: Nat): ?Text {
+  return if (key != 1) ?Nat.toText(value) else null;
 });
 
-Map.clear(map);
+Map.clear(map1);
 ```

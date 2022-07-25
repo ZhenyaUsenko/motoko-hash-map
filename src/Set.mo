@@ -4,8 +4,8 @@ import Utils "./utils";
 
 module {
   type HashUtils<K> = (
-    getHash: (K) -> Nat32,
-    areEqual: (K, K) -> Bool,
+    getHash: (key: K) -> Nat32,
+    areEqual: (key1: K, key2: K) -> Bool,
   );
 
   type Entry<K> = (
@@ -15,7 +15,7 @@ module {
   );
 
   type Slot<K> = {
-    #item: Entry<K>;
+    #entry: Entry<K>;
     #nextIndex: Nat32;
   };
 
@@ -35,7 +35,7 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  func iter<K, T>(map: Set<K>, fn: (Entry<K>) -> T): Iter.Iter<T> {
+  func iter<K, T>(map: Set<K>, fn: (entry: Entry<K>) -> T): Iter.Iter<T> {
     let (_, data, _, takenSize, _) = map.body;
 
     var index = 0:Nat32;
@@ -43,10 +43,10 @@ module {
     return {
       next = func(): ?T {
         loop if (index < takenSize) switch (data[toNat(index)]) {
-          case (#item item) {
+          case (#entry entry) {
             index += 1;
 
-            return ?fn(item);
+            return ?fn(entry);
           };
 
           case (_) index += 1;
@@ -68,11 +68,11 @@ module {
     let newBuckets: [var Nat32] = Prim.Array_init(toNat(newCapacity), 0:Nat32);
     let newData: [var Slot<K>] = Prim.Array_init(toNat(newCapacity), #nextIndex (0:Nat32));
 
-    for (item in data.vals()) switch (item) {
-      case (#item (key, hash, _)) {
+    for (entry in data.vals()) switch (entry) {
+      case (#entry (key, hash, _)) {
         let bucketIndex = toNat(hash % newCapacity);
 
-        newData[toNat(newTakenSize)] := #item (key, hash, newBuckets[bucketIndex]);
+        newData[toNat(newTakenSize)] := #entry (key, hash, newBuckets[bucketIndex]);
 
         newTakenSize += 1;
 
@@ -93,8 +93,8 @@ module {
     var index = buckets[toNat(getHash(key) % capacity)];
 
     loop if (index == 0) return false else switch (data[toNat(index - 1)]) {
-      case (#item (itemKey, _, nextIndex)) {
-        if (areEqual(itemKey, key)) return true;
+      case (#entry (entryKey, _, nextIndex)) {
+        if (areEqual(entryKey, key)) return true;
 
         index := nextIndex;
       };
@@ -116,7 +116,7 @@ module {
     loop if (index == 0) {
       let newTakenSize = takenSize + 1;
 
-      data[toNat(takenSize)] := #item (key, hash, firstIndex);
+      data[toNat(takenSize)] := #entry (key, hash, firstIndex);
       buckets[bucketIndex] := newTakenSize;
 
       map.body := (buckets, data, capacity, newTakenSize, size + 1);
@@ -128,8 +128,8 @@ module {
       let dataIndex = toNat(index - 1);
 
       switch (data[dataIndex]) {
-        case (#item (itemKey, _, nextIndex)) {
-          if (areEqual(itemKey, key)) return true;
+        case (#entry (entryKey, _, nextIndex)) {
+          if (areEqual(entryKey, key)) return true;
 
           index := nextIndex;
         };
@@ -150,8 +150,8 @@ module {
       let dataIndex = toNat(index - 1);
 
       switch (data[dataIndex]) {
-        case (#item (itemKey, _, nextIndex)) {
-          if (areEqual(itemKey, key)) {
+        case (#entry (entryKey, _, nextIndex)) {
+          if (areEqual(entryKey, key)) {
             let newSize = size - 1;
 
             data[dataIndex] := #nextIndex nextIndex;
@@ -173,16 +173,16 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func filter<K>(map: Set<K>, fn: (K) -> Bool): Set<K> {
+  public func filter<K>(map: Set<K>, fn: (key: K) -> Bool): Set<K> {
     let (_, data, capacity, _, _) = map.body;
 
     let newData: [var Slot<K>] = Prim.Array_init(toNat(capacity), #nextIndex (0:Nat32));
     var newCapacity = 2:Nat32;
     var newSize = 0:Nat32;
 
-    for (item in data.vals()) switch (item) {
-      case (#item (key, hash, _)) if (fn(key)) {
-        newData[toNat(newSize)] := #item (key, hash, 0);
+    for (entry in data.vals()) switch (entry) {
+      case (#entry (key, hash, _)) if (fn(key)) {
+        newData[toNat(newSize)] := #entry (key, hash, 0);
           
         newSize += 1;
 
