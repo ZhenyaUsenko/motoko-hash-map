@@ -41,17 +41,17 @@ module {
     let newData = Prim.Array_init<Entry<K, V>>(toNat(newCapacity), (null, null, 0, 0));
 
     for (entry in data.vals()) switch (entry) {
-      case (?key, ?value, hash, _) {
+      case (null, _, _, _) {};
+
+      case (key, value, hash, _) {
         let bucketIndex = toNat(hash % newCapacity);
 
-        newData[toNat(newTakenSize)] := (?key, ?value, hash, newBuckets[bucketIndex]);
+        newData[toNat(newTakenSize)] := (key, value, hash, newBuckets[bucketIndex]);
 
         newTakenSize += 1;
 
         newBuckets[bucketIndex] := newTakenSize;
       };
-
-      case (_) {};
     };
 
     map.body := (newBuckets, newData, newCapacity, newTakenSize, size);
@@ -87,8 +87,8 @@ module {
     var index = buckets[toNat(getHash(key) % capacity)];
 
     loop if (index == 0) return null else switch (data[toNat(index - 1)]) {
-      case (?entryKey, ?value, _, nextIndex) {
-        if (areEqual(entryKey, key)) return ?value;
+      case (?entryKey, value, _, nextIndex) {
+        if (areEqual(entryKey, key)) return value;
 
         index := nextIndex;
       };
@@ -122,11 +122,11 @@ module {
       let dataIndex = toNat(index - 1);
 
       switch (data[dataIndex]) {
-        case (?entryKey, ?prevValue, hash, nextIndex) {
+        case (?entryKey, prevValue, hash, nextIndex) {
           if (areEqual(entryKey, key)) {
             data[dataIndex] := (?entryKey, ?value, hash, nextIndex);
 
-            return ?prevValue;
+            return prevValue;
           };
 
           index := nextIndex;
@@ -148,7 +148,7 @@ module {
       let dataIndex = toNat(index - 1);
 
       switch (data[dataIndex]) {
-        case (?entryKey, ?value, _, nextIndex) {
+        case (?entryKey, prevValue, _, nextIndex) {
           if (areEqual(entryKey, key)) {
             let newSize = size - 1;
 
@@ -158,7 +158,7 @@ module {
 
             if (newSize < capacity / 4) rehash(map);
 
-            return ?value;
+            return prevValue;
           };
 
           index := nextIndex;
@@ -181,7 +181,7 @@ module {
       newBuckets[index] := buckets[index];
 
       switch (data[index]) {
-        case (?key, ?value, hash, nextIndex) newData[index] := (?key, ?fn(key, value), hash, nextIndex);
+        case (?key, ?prevValue, hash, nextIndex) newData[index] := (?key, ?fn(key, prevValue), hash, nextIndex);
         case (_, _, hash, nextIndex) if (nextIndex != 0) newData[index] := (null, null, hash, nextIndex);
       };
     };
@@ -201,15 +201,15 @@ module {
 
     for (entry in data.vals()) switch (entry) {
       case (?key, ?prevValue, hash, _) switch (fn(key, prevValue)) {
-        case (?value) {
-          newData[toNat(newSize)] := (?key, ?value, hash, 0);
+        case (null) {};
+
+        case (value) {
+          newData[toNat(newSize)] := (?key, value, hash, 0);
 
           newSize += 1;
 
           if (newSize == newCapacity) newCapacity *= 2;
         };
-
-        case (_) {};
       };
 
       case (_) {};

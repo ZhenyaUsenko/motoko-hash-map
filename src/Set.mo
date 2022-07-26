@@ -40,17 +40,17 @@ module {
     let newData = Prim.Array_init<Entry<K>>(toNat(newCapacity), (null, 0, 0));
 
     for (entry in data.vals()) switch (entry) {
-      case (?key, hash, _) {
+      case (null, _, _) {};
+
+      case (key, hash, _) {
         let bucketIndex = toNat(hash % newCapacity);
 
-        newData[toNat(newTakenSize)] := (?key, hash, newBuckets[bucketIndex]);
+        newData[toNat(newTakenSize)] := (key, hash, newBuckets[bucketIndex]);
 
         newTakenSize += 1;
 
         newBuckets[bucketIndex] := newTakenSize;
       };
-
-      case (_) {};
     };
 
     map.body := (newBuckets, newData, newCapacity, newTakenSize, size);
