@@ -40,7 +40,7 @@ module {
     let newData = Prim.Array_init<Entry<K>>(toNat(newCapacity), (null, 0, 0));
 
     for (entry in data.vals()) switch (entry) {
-      case ((?key, hash, _)) {
+      case (?key, hash, _) {
         let bucketIndex = toNat(hash % newCapacity);
 
         newData[toNat(newTakenSize)] := (?key, hash, newBuckets[bucketIndex]);
@@ -66,7 +66,7 @@ module {
     return {
       next = func(): ?K {
         loop if (index >= takenSize) return null else switch (data[toNat(index)]) {
-          case ((?key, _, _)) {
+          case (?key, _, _) {
             index += 1;
 
             return ?key;
@@ -86,13 +86,13 @@ module {
     var index = buckets[toNat(getHash(key) % capacity)];
 
     loop if (index == 0) return false else switch (data[toNat(index - 1)]) {
-      case ((?entryKey, _, nextIndex)) {
+      case (?entryKey, _, nextIndex) {
         if (areEqual(entryKey, key)) return true;
 
         index := nextIndex;
       };
 
-      case ((_, _, nextIndex)) index := nextIndex;
+      case (_, _, nextIndex) index := nextIndex;
     };
   };
 
@@ -121,13 +121,13 @@ module {
       let dataIndex = toNat(index - 1);
 
       switch (data[dataIndex]) {
-        case ((?entryKey, _, nextIndex)) {
+        case (?entryKey, _, nextIndex) {
           if (areEqual(entryKey, key)) return true;
 
           index := nextIndex;
         };
 
-        case ((_, _, nextIndex)) index := nextIndex;
+        case (_, _, nextIndex) index := nextIndex;
       };
     };
   };
@@ -143,7 +143,7 @@ module {
       let dataIndex = toNat(index - 1);
 
       switch (data[dataIndex]) {
-        case ((?entryKey, _, nextIndex)) {
+        case (?entryKey, _, nextIndex) {
           if (areEqual(entryKey, key)) {
             let newSize = size - 1;
 
@@ -159,7 +159,7 @@ module {
           index := nextIndex;
         };
 
-        case ((_, _, nextIndex)) index := nextIndex;
+        case (_, _, nextIndex) index := nextIndex;
       };
     };
   };
@@ -175,7 +175,7 @@ module {
     var newSize = 0:Nat32;
 
     for (entry in data.vals()) switch (entry) {
-      case ((?key, hash, _)) if (fn(key)) {
+      case (?key, hash, _) if (fn(key)) {
         newData[toNat(newSize)] := (?key, hash, 0);
 
         newSize += 1;

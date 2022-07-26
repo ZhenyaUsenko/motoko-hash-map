@@ -41,7 +41,7 @@ module {
     let newData = Prim.Array_init<Entry<K, V>>(toNat(newCapacity), (null, null, 0, 0));
 
     for (entry in data.vals()) switch (entry) {
-      case ((?key, ?value, hash, _)) {
+      case (?key, ?value, hash, _) {
         let bucketIndex = toNat(hash % newCapacity);
 
         newData[toNat(newTakenSize)] := (?key, ?value, hash, newBuckets[bucketIndex]);
@@ -59,7 +59,7 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  func iter<K, V, T>(map: Map<K, V>, fn: (entry: (K, V)) -> T): Iter.Iter<T> {
+  func iter<K, V, T>(map: Map<K, V>, fn: (key: K, value: V) -> T): Iter.Iter<T> {
     let (_, data, _, takenSize, _) = map.body;
 
     var index = 0:Nat32;
@@ -67,10 +67,10 @@ module {
     return {
       next = func(): ?T {
         loop if (index >= takenSize) return null else switch (data[toNat(index)]) {
-          case ((?key, ?value, _, _)) {
+          case (?key, ?value, _, _) {
             index += 1;
 
-            return ?fn((key, value));
+            return ?fn(key, value);
           };
 
           case (_) index += 1;
@@ -87,13 +87,13 @@ module {
     var index = buckets[toNat(getHash(key) % capacity)];
 
     loop if (index == 0) return null else switch (data[toNat(index - 1)]) {
-      case ((?entryKey, ?value, _, nextIndex)) {
+      case (?entryKey, ?value, _, nextIndex) {
         if (areEqual(entryKey, key)) return ?value;
 
         index := nextIndex;
       };
 
-      case ((_, _, _, nextIndex)) index := nextIndex;
+      case (_, _, _, nextIndex) index := nextIndex;
     };
   };
 
@@ -122,7 +122,7 @@ module {
       let dataIndex = toNat(index - 1);
 
       switch (data[dataIndex]) {
-        case ((?entryKey, ?prevValue, hash, nextIndex)) {
+        case (?entryKey, ?prevValue, hash, nextIndex) {
           if (areEqual(entryKey, key)) {
             data[dataIndex] := (?entryKey, ?value, hash, nextIndex);
 
@@ -132,7 +132,7 @@ module {
           index := nextIndex;
         };
 
-        case ((_, _, _, nextIndex)) index := nextIndex;
+        case (_, _, _, nextIndex) index := nextIndex;
       };
     };
   };
@@ -148,7 +148,7 @@ module {
       let dataIndex = toNat(index - 1);
 
       switch (data[dataIndex]) {
-        case ((?entryKey, ?value, _, nextIndex)) {
+        case (?entryKey, ?value, _, nextIndex) {
           if (areEqual(entryKey, key)) {
             let newSize = size - 1;
 
@@ -164,7 +164,7 @@ module {
           index := nextIndex;
         };
 
-        case ((_, _, _, nextIndex)) index := nextIndex;
+        case (_, _, _, nextIndex) index := nextIndex;
       };
     };
   };
@@ -181,8 +181,8 @@ module {
       newBuckets[index] := buckets[index];
 
       switch (data[index]) {
-        case ((?key, ?value, hash, nextIndex)) newData[index] := (?key, ?fn(key, value), hash, nextIndex);
-        case ((_, _, hash, nextIndex)) if (nextIndex != 0) newData[index] := (null, null, hash, nextIndex);
+        case (?key, ?value, hash, nextIndex) newData[index] := (?key, ?fn(key, value), hash, nextIndex);
+        case (_, _, hash, nextIndex) if (nextIndex != 0) newData[index] := (null, null, hash, nextIndex);
       };
     };
 
@@ -200,7 +200,7 @@ module {
     var newSize = 0:Nat32;
 
     for (entry in data.vals()) switch (entry) {
-      case ((?key, ?prevValue, hash, _)) switch (fn(key, prevValue)) {
+      case (?key, ?prevValue, hash, _) switch (fn(key, prevValue)) {
         case (?value) {
           newData[toNat(newSize)] := (?key, ?value, hash, 0);
 
@@ -249,15 +249,15 @@ module {
   };
 
   public func keys<K, V>(map: Map<K, V>): Iter.Iter<K> {
-    return iter(map, func((key, _): (K, V)): K { key });
+    return iter(map, func(key: K, value: V): K { key });
   };
 
   public func vals<K, V>(map: Map<K, V>): Iter.Iter<V> {
-    return iter(map, func((_, value): (K, V)): V { value });
+    return iter(map, func(key: K, value: V): V { value });
   };
 
   public func entries<K, V>(map: Map<K, V>): Iter.Iter<(K, V)> {
-    return iter(map, func(entry: (K, V)): ((K, V)) { entry });
+    return iter(map, func(key: K, value: V): ((K, V)) { (key, value) });
   };
 
   public func filter<K, V>(map: Map<K, V>, fn: (key: K, value: V) -> Bool): Map<K, V> {
