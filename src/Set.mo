@@ -42,7 +42,7 @@ module {
 
     return {
       next = func(): ?T {
-        loop if (index < takenSize) switch (data[toNat(index)]) {
+        loop if (index >= takenSize) return null else switch (data[toNat(index)]) {
           case (#entry entry) {
             index += 1;
 
@@ -50,8 +50,6 @@ module {
           };
 
           case (_) index += 1;
-        } else {
-          return null;
         };
       };
     };
@@ -65,8 +63,8 @@ module {
     let newCapacity = if (size < capacity / 4) capacity / 2 else if (size > capacity * 3 / 4) capacity * 2 else capacity;
     var newTakenSize = 0:Nat32;
 
-    let newBuckets: [var Nat32] = Prim.Array_init(toNat(newCapacity), 0:Nat32);
-    let newData: [var Slot<K>] = Prim.Array_init(toNat(newCapacity), #nextIndex (0:Nat32));
+    let newBuckets = Prim.Array_init<Nat32>(toNat(newCapacity), 0);
+    let newData = Prim.Array_init<Slot<K>>(toNat(newCapacity), #nextIndex 0);
 
     for (entry in data.vals()) switch (entry) {
       case (#entry (key, hash, _)) {
@@ -176,14 +174,15 @@ module {
   public func filter<K>(map: Set<K>, fn: (key: K) -> Bool): Set<K> {
     let (_, data, capacity, _, _) = map.body;
 
-    let newData: [var Slot<K>] = Prim.Array_init(toNat(capacity), #nextIndex (0:Nat32));
+    let newBuckets = Prim.Array_init<Nat32>(0, 0);
+    let newData = Prim.Array_init<Slot<K>>(toNat(capacity), #nextIndex 0);
     var newCapacity = 2:Nat32;
     var newSize = 0:Nat32;
 
     for (entry in data.vals()) switch (entry) {
       case (#entry (key, hash, _)) if (fn(key)) {
         newData[toNat(newSize)] := #entry (key, hash, 0);
-          
+
         newSize += 1;
 
         if (newSize == newCapacity) newCapacity *= 2;
@@ -192,7 +191,7 @@ module {
       case (_) {};
     };
 
-    let newMap: Set<K> = { var body = ([var], newData, newCapacity, newSize, newSize) };
+    let newMap = { var body = (newBuckets, newData, newCapacity, newSize, newSize) };
 
     rehash(newMap);
 
@@ -202,11 +201,11 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func new<K>(): Set<K> {
-    return { var body = (Prim.Array_init(2, 0:Nat32), Prim.Array_init(2, #nextIndex (0:Nat32)), 2, 0, 0) };
+    return { var body = (Prim.Array_init<Nat32>(2, 0), Prim.Array_init<Slot<K>>(2, #nextIndex 0), 2, 0, 0) };
   };
 
   public func clear<K>(map: Set<K>) {
-    map.body := (Prim.Array_init(2, 0:Nat32), Prim.Array_init(2, #nextIndex (0:Nat32)), 2, 0, 0);
+    map.body := (Prim.Array_init<Nat32>(2, 0), Prim.Array_init<Slot<K>>(2, #nextIndex 0), 2, 0, 0);
   };
 
   public func size<K>(map: Set<K>): Nat {
