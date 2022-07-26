@@ -9,20 +9,15 @@ module {
   );
 
   type Entry<K> = (
-    key: K,
+    key: ?K,
     hash: Nat32,
     nextIndex: Nat32,
   );
 
-  type Slot<K> = {
-    #entry: Entry<K>;
-    #nextIndex: Nat32;
-  };
-
   public type Set<K> = {
     var body: (
       buckets: [var Nat32],
-      data: [var Slot<K>],
+      data: [var Entry<K>],
       capacity: Nat32,
       takenSize: Nat32,
       size: Nat32,
@@ -35,28 +30,6 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  func iter<K, T>(map: Set<K>, fn: (entry: Entry<K>) -> T): Iter.Iter<T> {
-    let (_, data, _, takenSize, _) = map.body;
-
-    var index = 0:Nat32;
-
-    return {
-      next = func(): ?T {
-        loop if (index >= takenSize) return null else switch (data[toNat(index)]) {
-          case (#entry entry) {
-            index += 1;
-
-            return ?fn(entry);
-          };
-
-          case (_) index += 1;
-        };
-      };
-    };
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   func rehash<K>(map: Set<K>) {
     let (_, data, capacity, _, size) = map.body;
 
@@ -64,13 +37,13 @@ module {
     var newTakenSize = 0:Nat32;
 
     let newBuckets = Prim.Array_init<Nat32>(toNat(newCapacity), 0);
-    let newData = Prim.Array_init<Slot<K>>(toNat(newCapacity), #nextIndex 0);
+    let newData = Prim.Array_init<Entry<K>>(toNat(newCapacity), (null, 0, 0));
 
     for (entry in data.vals()) switch (entry) {
-      case (#entry (key, hash, _)) {
+      case ((?key, hash, _)) {
         let bucketIndex = toNat(hash % newCapacity);
 
-        newData[toNat(newTakenSize)] := #entry (key, hash, newBuckets[bucketIndex]);
+        newData[toNat(newTakenSize)] := (?key, hash, newBuckets[bucketIndex]);
 
         newTakenSize += 1;
 
@@ -85,19 +58,41 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  public func keys<K>(map: Set<K>): Iter.Iter<K> {
+    let (_, data, _, takenSize, _) = map.body;
+
+    var index = 0:Nat32;
+
+    return {
+      next = func(): ?K {
+        loop if (index >= takenSize) return null else switch (data[toNat(index)]) {
+          case ((?key, _, _)) {
+            index += 1;
+
+            return ?key;
+          };
+
+          case (_) index += 1;
+        };
+      };
+    };
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   public func has<K>(map: Set<K>, (getHash, areEqual): HashUtils<K>, key: K): Bool {
     let (buckets, data, capacity, _, _) = map.body;
 
     var index = buckets[toNat(getHash(key) % capacity)];
 
     loop if (index == 0) return false else switch (data[toNat(index - 1)]) {
-      case (#entry (entryKey, _, nextIndex)) {
+      case ((?entryKey, _, nextIndex)) {
         if (areEqual(entryKey, key)) return true;
 
         index := nextIndex;
       };
 
-      case (#nextIndex nextIndex) index := nextIndex;
+      case ((_, _, nextIndex)) index := nextIndex;
     };
   };
 
@@ -114,7 +109,7 @@ module {
     loop if (index == 0) {
       let newTakenSize = takenSize + 1;
 
-      data[toNat(takenSize)] := #entry (key, hash, firstIndex);
+      data[toNat(takenSize)] := (?key, hash, firstIndex);
       buckets[bucketIndex] := newTakenSize;
 
       map.body := (buckets, data, capacity, newTakenSize, size + 1);
@@ -126,13 +121,13 @@ module {
       let dataIndex = toNat(index - 1);
 
       switch (data[dataIndex]) {
-        case (#entry (entryKey, _, nextIndex)) {
+        case ((?entryKey, _, nextIndex)) {
           if (areEqual(entryKey, key)) return true;
 
           index := nextIndex;
         };
 
-        case (#nextIndex nextIndex) index := nextIndex;
+        case ((_, _, nextIndex)) index := nextIndex;
       };
     };
   };
@@ -148,11 +143,11 @@ module {
       let dataIndex = toNat(index - 1);
 
       switch (data[dataIndex]) {
-        case (#entry (entryKey, _, nextIndex)) {
+        case ((?entryKey, _, nextIndex)) {
           if (areEqual(entryKey, key)) {
             let newSize = size - 1;
 
-            data[dataIndex] := #nextIndex nextIndex;
+            data[dataIndex] := (null, 0, nextIndex);
 
             map.body := (buckets, data, capacity, takenSize, newSize);
 
@@ -164,7 +159,7 @@ module {
           index := nextIndex;
         };
 
-        case (#nextIndex nextIndex) index := nextIndex;
+        case ((_, _, nextIndex)) index := nextIndex;
       };
     };
   };
@@ -175,13 +170,13 @@ module {
     let (_, data, capacity, _, _) = map.body;
 
     let newBuckets = Prim.Array_init<Nat32>(0, 0);
-    let newData = Prim.Array_init<Slot<K>>(toNat(capacity), #nextIndex 0);
+    let newData = Prim.Array_init<Entry<K>>(toNat(capacity), (null, 0, 0));
     var newCapacity = 2:Nat32;
     var newSize = 0:Nat32;
 
     for (entry in data.vals()) switch (entry) {
-      case (#entry (key, hash, _)) if (fn(key)) {
-        newData[toNat(newSize)] := #entry (key, hash, 0);
+      case ((?key, hash, _)) if (fn(key)) {
+        newData[toNat(newSize)] := (?key, hash, 0);
 
         newSize += 1;
 
@@ -201,11 +196,11 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func new<K>(): Set<K> {
-    return { var body = (Prim.Array_init<Nat32>(2, 0), Prim.Array_init<Slot<K>>(2, #nextIndex 0), 2, 0, 0) };
+    return { var body = (Prim.Array_init<Nat32>(2, 0), Prim.Array_init<Entry<K>>(2, (null, 0, 0)), 2, 0, 0) };
   };
 
   public func clear<K>(map: Set<K>) {
-    map.body := (Prim.Array_init<Nat32>(2, 0), Prim.Array_init<Slot<K>>(2, #nextIndex 0), 2, 0, 0);
+    map.body := (Prim.Array_init<Nat32>(2, 0), Prim.Array_init<Entry<K>>(2, (null, 0, 0)), 2, 0, 0);
   };
 
   public func size<K>(map: Set<K>): Nat {
@@ -218,9 +213,5 @@ module {
 
   public func delete<K>(map: Set<K>, hashUtils: HashUtils<K>, key: K) {
     ignore remove(map, hashUtils, key);
-  };
-
-  public func keys<K>(map: Set<K>): Iter.Iter<K> {
-    return iter(map, func((key, _, _): Entry<K>): K { key });
   };
 };
