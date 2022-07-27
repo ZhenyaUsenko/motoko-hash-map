@@ -3,11 +3,6 @@ import Prim "mo:prim";
 import Utils "./utils";
 
 module {
-  type HashUtils<K> = (
-    getHash: (key: K) -> Nat32,
-    areEqual: (key1: K, key2: K) -> Bool,
-  );
-
   type Entry<K, V> = (
     key: ?K,
     value: ?V,
@@ -25,7 +20,9 @@ module {
     );
   };
 
-  public let { nhash; thash; phash; bhash } = Utils;
+  public type HashUtils<K> = Utils.HashUtils<K>;
+
+  public let { nhash; thash; phash; bhash; lhash; calcHash } = Utils;
 
   let toNat = Prim.nat32ToNat;
 
@@ -59,28 +56,6 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  func iter<K, V, T>(map: Map<K, V>, fn: (key: K, value: V) -> T): Iter.Iter<T> {
-    let (_, data, _, takenSize, _) = map.body;
-
-    var index = 0:Nat32;
-
-    return {
-      next = func(): ?T {
-        loop if (index >= takenSize) return null else switch (data[toNat(index)]) {
-          case (?key, ?value, _, _) {
-            index += 1;
-
-            return ?fn(key, value);
-          };
-
-          case (_) index += 1;
-        };
-      };
-    };
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   public func get<K, V>(map: Map<K, V>, (getHash, areEqual): HashUtils<K>, key: K): ?V {
     let (buckets, data, capacity, _, _) = map.body;
 
@@ -95,6 +70,10 @@ module {
 
       case (_, _, _, nextIndex) index := nextIndex;
     };
+  };
+
+  public func has<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K): Bool {
+    return switch (get(map, hashUtils, key)) { case (null) false; case (_) true };
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -137,6 +116,10 @@ module {
     };
   };
 
+  public func set<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: V) {
+    ignore put(map, hashUtils, key, value);
+  };
+
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func remove<K, V>(map: Map<K, V>, (getHash, areEqual): HashUtils<K>, key: K): ?V {
@@ -167,6 +150,10 @@ module {
         case (_, _, _, nextIndex) index := nextIndex;
       };
     };
+  };
+
+  public func delete<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K) {
+    ignore remove(map, hashUtils, key);
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -222,30 +209,30 @@ module {
     return newMap;
   };
 
+  public func filter<K, V>(map: Map<K, V>, fn: (key: K, value: V) -> Bool): Map<K, V> {
+    return mapFilter(map, func(key: K, value: V): ?V { if (fn(key, value)) ?value else null });
+  };
+
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func new<K, V>(): Map<K, V> {
-    return { var body = (Prim.Array_init<Nat32>(2, 0), Prim.Array_init<Entry<K, V>>(2, (null, null, 0, 0)), 2, 0, 0) };
-  };
+  func iter<K, V, T>(map: Map<K, V>, fn: (key: K, value: V) -> T): Iter.Iter<T> {
+    let (_, data, _, takenSize, _) = map.body;
 
-  public func clear<K, V>(map: Map<K, V>) {
-    map.body := (Prim.Array_init<Nat32>(2, 0), Prim.Array_init<Entry<K, V>>(2, (null, null, 0, 0)), 2, 0, 0);
-  };
+    var index = 0:Nat32;
 
-  public func size<K, V>(map: Map<K, V>): Nat {
-    return toNat(map.body.4);
-  };
+    return {
+      next = func(): ?T {
+        loop if (index >= takenSize) return null else switch (data[toNat(index)]) {
+          case (?key, ?value, _, _) {
+            index += 1;
 
-  public func has<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K): Bool {
-    return switch (get(map, hashUtils, key)) { case (null) false; case (_) true };
-  };
+            return ?fn(key, value);
+          };
 
-  public func set<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: V) {
-    ignore put(map, hashUtils, key, value);
-  };
-
-  public func delete<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K) {
-    ignore remove(map, hashUtils, key);
+          case (_) index += 1;
+        };
+      };
+    };
   };
 
   public func keys<K, V>(map: Map<K, V>): Iter.Iter<K> {
@@ -260,7 +247,43 @@ module {
     return iter(map, func(key: K, value: V): ((K, V)) { (key, value) });
   };
 
-  public func filter<K, V>(map: Map<K, V>, fn: (key: K, value: V) -> Bool): Map<K, V> {
-    return mapFilter(map, func(key: K, value: V): ?V { if (fn(key, value)) ?value else null });
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  public func forEach<K, V>(map: Map<K, V>, fn: (key: K, value: V) -> ()) {
+    for (entry in map.body.1.vals()) switch (entry) { case (?key, ?value, _, _) fn(key, value); case (_) {} };
+  };
+
+  public func some<K, V>(map: Map<K, V>, fn: (key: K, value: V) -> Bool): Bool {
+    for (entry in map.body.1.vals()) switch (entry) { case (?key, ?value, _, _) if (fn(key, value)) return true; case (_) {} };
+
+    return false;
+  };
+
+  public func every<K, V>(map: Map<K, V>, fn: (key: K, value: V) -> Bool): Bool {
+    for (entry in map.body.1.vals()) switch (entry) { case (?key, ?value, _, _) if (not fn(key, value)) return false; case (_) {} };
+
+    return true;
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  public func new<K, V>(): Map<K, V> {
+    return { var body = (Prim.Array_init<Nat32>(2, 0), Prim.Array_init<Entry<K, V>>(2, (null, null, 0, 0)), 2, 0, 0) };
+  };
+
+  public func fromIter<K, V>(iter: Iter.Iter<(K, V)>, hashUtils: HashUtils<K>): Map<K, V> {
+    let map = new<K, V>();
+
+    for ((key, value) in iter) ignore put(map, hashUtils, key, value);
+
+    return map;
+  };
+
+  public func clear<K, V>(map: Map<K, V>) {
+    map.body := (Prim.Array_init<Nat32>(2, 0), Prim.Array_init<Entry<K, V>>(2, (null, null, 0, 0)), 2, 0, 0);
+  };
+
+  public func size<K, V>(map: Map<K, V>): Nat {
+    return toNat(map.body.4);
   };
 };
