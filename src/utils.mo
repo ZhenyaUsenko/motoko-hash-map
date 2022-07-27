@@ -55,15 +55,17 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public let nhash = (hashInt, func(a: Int, b: Int): Bool { a == b });
+  public let ihash: HashUtils<Int> = (hashInt, func(a: Int, b: Int): Bool { a == b });
 
-  public let thash = (hashText, func(a: Text, b: Text): Bool { a == b });
+  public let nhash: HashUtils<Nat> = (hashInt, func(a: Nat, b: Nat): Bool { a == b });
 
-  public let phash = (hashPrincipal, func(a: Principal, b: Principal): Bool { a == b });
+  public let thash: HashUtils<Text> = (hashText, func(a: Text, b: Text): Bool { a == b });
 
-  public let bhash = (hashBlob, func(a: Blob, b: Blob): Bool { a == b });
+  public let phash: HashUtils<Principal> = (hashPrincipal, func(a: Principal, b: Principal): Bool { a == b });
 
-  public let lhash = (hashBool, func(a: Bool, b: Bool): Bool { a == b });
+  public let bhash: HashUtils<Blob> = (hashBlob, func(a: Blob, b: Blob): Bool { a == b });
+
+  public let lhash: HashUtils<Bool> = (hashBool, func(a: Bool, b: Bool): Bool { a == b });
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
