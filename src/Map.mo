@@ -22,9 +22,11 @@ module {
 
   public type HashUtils<K> = Utils.HashUtils<K>;
 
-  public let { ihash; nhash; thash; phash; bhash; lhash; calcHash } = Utils;
+  public let { ihash; nhash; thash; phash; bhash; lhash; useHash; calcHash } = Utils;
 
-  let toNat = Prim.nat32ToNat;
+  let { Array_init = initArray; nat32ToNat = toNat } = Prim;
+
+  let emptyEntry = (null, null, 0:Nat32, 0:Nat32);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -34,8 +36,8 @@ module {
     let newCapacity = if (size < capacity / 4) capacity / 2 else if (size > capacity * 3 / 4) capacity * 2 else capacity;
     var newTakenSize = 0:Nat32;
 
-    let newBuckets = Prim.Array_init<Nat32>(toNat(newCapacity), 0);
-    let newData = Prim.Array_init<Entry<K, V>>(toNat(newCapacity), (null, null, 0, 0));
+    let newBuckets = initArray<Nat32>(toNat(newCapacity), 0);
+    let newData = initArray<Entry<K, V>>(toNat(newCapacity), emptyEntry);
 
     for (entry in data.vals()) switch (entry) {
       case (null, _, _, _) {};
@@ -135,7 +137,7 @@ module {
           if (areEqual(entryKey, key)) {
             let newSize = size - 1;
 
-            data[dataIndex] := (null, null, 0, nextIndex);
+            data[dataIndex] := if (nextIndex != 0) (null, null, 0, nextIndex) else emptyEntry;
 
             map.body := (buckets, data, capacity, takenSize, newSize);
 
@@ -161,8 +163,8 @@ module {
   public func map<K, V1, V2>(map: Map<K, V1>, fn: (key: K, value: V1) -> V2): Map<K, V2> {
     let (buckets, data, capacity, takenSize, size) = map.body;
 
-    let newBuckets = Prim.Array_init<Nat32>(toNat(capacity), 0);
-    let newData = Prim.Array_init<Entry<K, V2>>(toNat(capacity), (null, null, 0, 0));
+    let newBuckets = initArray<Nat32>(toNat(capacity), 0);
+    let newData = initArray<Entry<K, V2>>(toNat(capacity), emptyEntry);
 
     for (index in buckets.keys()) {
       newBuckets[index] := buckets[index];
@@ -181,8 +183,8 @@ module {
   public func mapFilter<K, V1, V2>(map: Map<K, V1>, fn: (key: K, value: V1) -> ?V2): Map<K, V2> {
     let (_, data, _, takenSize, _) = map.body;
 
-    let newBuckets = Prim.Array_init<Nat32>(0, 0);
-    let newData = Prim.Array_init<Entry<K, V2>>(toNat(takenSize), (null, null, 0, 0));
+    let newBuckets = initArray<Nat32>(0, 0);
+    let newData = initArray<Entry<K, V2>>(toNat(takenSize), emptyEntry);
     var newCapacity = 2:Nat32;
     var newSize = 0:Nat32;
 
@@ -236,15 +238,15 @@ module {
   };
 
   public func keys<K, V>(map: Map<K, V>): Iter.Iter<K> {
-    return iter(map, func(key: K, value: V): K { key });
+    return iter<K, V, K>(map, func(key, value) { key });
   };
 
   public func vals<K, V>(map: Map<K, V>): Iter.Iter<V> {
-    return iter(map, func(key: K, value: V): V { value });
+    return iter<K, V, V>(map, func(key, value) { value });
   };
 
   public func entries<K, V>(map: Map<K, V>): Iter.Iter<(K, V)> {
-    return iter(map, func(key: K, value: V): ((K, V)) { (key, value) });
+    return iter<K, V, (K, V)>(map, func(key, value) { (key, value) });
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -273,12 +275,36 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  public func find<K, V>(map: Map<K, V>, fn: (key: K, value: V) -> Bool): ?(K, V) {
+    let (_, data, _, _, _) = map.body;
+
+    for (entry in data.vals()) switch (entry) { case (?key, ?value, _, _) if (fn(key, value)) return ?(key, value); case (_) {} };
+
+    return null;
+  };
+
+  public func findLast<K, V>(map: Map<K, V>, fn: (key: K, value: V) -> Bool): ?(K, V) {
+    let (_, data, _, takenSize, _) = map.body;
+
+    var index = takenSize;
+
+    while (index != 0) {
+      index -= 1;
+
+      switch (data[toNat(index)]) { case (?key, ?value, _, _) if (fn(key, value)) return ?(key, value); case (_) {} };
+    };
+
+    return null;
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   public func new<K, V>(): Map<K, V> {
-    return { var body = (Prim.Array_init<Nat32>(2, 0), Prim.Array_init<Entry<K, V>>(2, (null, null, 0, 0)), 2, 0, 0) };
+    return { var body = (initArray<Nat32>(2, 0), initArray<Entry<K, V>>(2, emptyEntry), 2, 0, 0) };
   };
 
   public func clear<K, V>(map: Map<K, V>) {
-    map.body := (Prim.Array_init<Nat32>(2, 0), Prim.Array_init<Entry<K, V>>(2, (null, null, 0, 0)), 2, 0, 0);
+    map.body := (initArray<Nat32>(2, 0), initArray<Entry<K, V>>(2, emptyEntry), 2, 0, 0);
   };
 
   public func fromIter<K, V>(iter: Iter.Iter<(K, V)>, hashUtils: HashUtils<K>): Map<K, V> {

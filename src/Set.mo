@@ -21,9 +21,11 @@ module {
 
   public type HashUtils<K> = Utils.HashUtils<K>;
 
-  public let { ihash; nhash; thash; phash; bhash; lhash; calcHash } = Utils;
+  public let { ihash; nhash; thash; phash; bhash; lhash; useHash; calcHash } = Utils;
 
-  let toNat = Prim.nat32ToNat;
+  let { Array_init = initArray; nat32ToNat = toNat } = Prim;
+
+  let emptyEntry = (null, 0:Nat32, 0:Nat32);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -33,8 +35,8 @@ module {
     let newCapacity = if (size < capacity / 4) capacity / 2 else if (size > capacity * 3 / 4) capacity * 2 else capacity;
     var newTakenSize = 0:Nat32;
 
-    let newBuckets = Prim.Array_init<Nat32>(toNat(newCapacity), 0);
-    let newData = Prim.Array_init<Entry<K>>(toNat(newCapacity), (null, 0, 0));
+    let newBuckets = initArray<Nat32>(toNat(newCapacity), 0);
+    let newData = initArray<Entry<K>>(toNat(newCapacity), emptyEntry);
 
     for (entry in data.vals()) switch (entry) {
       case (null, _, _) {};
@@ -126,7 +128,7 @@ module {
           if (areEqual(entryKey, key)) {
             let newSize = size - 1;
 
-            data[dataIndex] := (null, 0, nextIndex);
+            data[dataIndex] := if (nextIndex != 0) (null, 0, nextIndex) else emptyEntry;
 
             map.body := (buckets, data, capacity, takenSize, newSize);
 
@@ -152,8 +154,8 @@ module {
   public func filter<K>(map: Set<K>, fn: (key: K) -> Bool): Set<K> {
     let (_, data, capacity, _, _) = map.body;
 
-    let newBuckets = Prim.Array_init<Nat32>(0, 0);
-    let newData = Prim.Array_init<Entry<K>>(toNat(capacity), (null, 0, 0));
+    let newBuckets = initArray<Nat32>(0, 0);
+    let newData = initArray<Entry<K>>(toNat(capacity), emptyEntry);
     var newCapacity = 2:Nat32;
     var newSize = 0:Nat32;
 
@@ -224,12 +226,36 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  public func find<K>(map: Set<K>, fn: (key: K) -> Bool): ?K {
+    let (_, data, _, _, _) = map.body;
+
+    for (entry in data.vals()) switch (entry) { case (?key, _, _) if (fn(key)) return ?key; case (_) {} };
+
+    return null;
+  };
+
+  public func findLast<K>(map: Set<K>, fn: (key: K) -> Bool): ?K {
+    let (_, data, _, takenSize, _) = map.body;
+
+    var index = takenSize;
+
+    while (index != 0) {
+      index -= 1;
+
+      switch (data[toNat(index)]) { case (?key, _, _) if (fn(key)) return ?key; case (_) {} };
+    };
+
+    return null;
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   public func new<K>(): Set<K> {
-    return { var body = (Prim.Array_init<Nat32>(2, 0), Prim.Array_init<Entry<K>>(2, (null, 0, 0)), 2, 0, 0) };
+    return { var body = (initArray<Nat32>(2, 0), initArray<Entry<K>>(2, emptyEntry), 2, 0, 0) };
   };
 
   public func clear<K>(map: Set<K>) {
-    map.body := (Prim.Array_init<Nat32>(2, 0), Prim.Array_init<Entry<K>>(2, (null, 0, 0)), 2, 0, 0);
+    map.body := (initArray<Nat32>(2, 0), initArray<Entry<K>>(2, emptyEntry), 2, 0, 0);
   };
 
   public func fromIter<K>(iter: Iter.Iter<K>, hashUtils: HashUtils<K>): Set<K> {
