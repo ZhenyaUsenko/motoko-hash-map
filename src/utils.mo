@@ -2,13 +2,13 @@ import Prim "mo:prim";
 
 module {
   public type HashUtils<K> = (
-    getHash: (key: K) -> Nat32,
+    getHash: (key: K) -> Nat,
     areEqual: (a: K, b: K) -> Bool,
   );
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func hashInt(key: Int): Nat32 {
+  public func hashInt(key: Int): Nat {
     var hash = Prim.intToNat32Wrap(key);
 
     hash := (hash << 15) -% hash -% 1;
@@ -18,24 +18,24 @@ module {
     hash := hash *% 2057;
     hash := hash ^ (hash >> 16);
 
-    return hash & 0x3fffffff;
+    return Prim.nat32ToNat(hash & 0x3fffffff);
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func hashText(key: Text): Nat32 {
-    return Prim.hashBlob(Prim.encodeUtf8(key)) & 0x3fffffff;
+  public func hashText(key: Text): Nat {
+    return Prim.nat32ToNat(Prim.hashBlob(Prim.encodeUtf8(key)) & 0x3fffffff);
   };
 
-  public func hashPrincipal(key: Principal): Nat32 {
-    return Prim.hashBlob(Prim.blobOfPrincipal(key)) & 0x3fffffff;
+  public func hashPrincipal(key: Principal): Nat {
+    return Prim.nat32ToNat(Prim.hashBlob(Prim.blobOfPrincipal(key)) & 0x3fffffff);
   };
 
-  public func hashBlob(key: Blob): Nat32 {
-    return Prim.hashBlob(key) & 0x3fffffff;
+  public func hashBlob(key: Blob): Nat {
+    return Prim.nat32ToNat(Prim.hashBlob(key) & 0x3fffffff);
   };
 
-  public func hashBool(key: Bool): Nat32 {
+  public func hashBool(key: Bool): Nat {
     return if (key) 1 else 0;
   };
 
@@ -55,7 +55,7 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func useHash<K>((getHash, areEqual): HashUtils<K>, hash: Nat32): HashUtils<K> {
+  public func useHash<K>((getHash, areEqual): HashUtils<K>, hash: Nat): HashUtils<K> {
     return (func(key) { hash }, areEqual);
   };
 

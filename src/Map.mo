@@ -6,17 +6,17 @@ module {
   public type Entry<K, V> = (
     key: ?K,
     value: ?V,
-    hash: Nat32,
-    nextIndex: Nat32,
+    hash: Nat,
+    nextIndex: Nat,
   );
 
   public type Map<K, V> = {
     var body: (
-      buckets: [var Nat32],
+      buckets: [var Nat],
       data: [var Entry<K, V>],
-      capacity: Nat32,
-      takenSize: Nat32,
-      size: Nat32,
+      capacity: Nat,
+      takenSize: Nat,
+      size: Nat,
     );
   };
 
@@ -24,9 +24,11 @@ module {
 
   public let { ihash; nhash; thash; phash; bhash; lhash; useHash; calcHash } = Utils;
 
-  let { Array_init = initArray; nat32ToNat = toNat } = Prim;
+  let { Array_init = initArray } = Prim;
 
-  let emptyEntry = (null, null, 0:Nat32, 0:Nat32);
+  let NULL_INDEX = 0x3fffffff;
+
+  let NULL_ENTRY = (null, null, 0, NULL_INDEX);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -34,26 +36,27 @@ module {
     let (_, data, capacity, _, size) = map.body;
 
     let newCapacity = if (size < capacity / 4) capacity / 2 else if (size > capacity * 3 / 4) capacity * 2 else capacity;
-    var newTakenSize = 0:Nat32;
 
-    let newBuckets = initArray<Nat32>(toNat(newCapacity), 0);
-    let newData = initArray<Entry<K, V>>(toNat(newCapacity), emptyEntry);
+    if (newCapacity > NULL_INDEX) Prim.trap("Map capacity limit reached (2 ** 29)");
+
+    let newBuckets = initArray<Nat>(newCapacity, NULL_INDEX);
+    let newData = initArray<Entry<K, V>>(newCapacity, NULL_ENTRY);
+    var index = 0;
 
     for (entry in data.vals()) switch (entry) {
       case (null, _, _, _) {};
 
       case (key, value, hash, _) {
-        let bucketIndex = toNat(hash % newCapacity);
+        let bucketIndex = hash % newCapacity;
 
-        newData[toNat(newTakenSize)] := (key, value, hash, newBuckets[bucketIndex]);
+        newData[index] := (key, value, hash, newBuckets[bucketIndex]);
+        newBuckets[bucketIndex] := index;
 
-        newTakenSize += 1;
-
-        newBuckets[bucketIndex] := newTakenSize;
+        index += 1;
       };
     };
 
-    map.body := (newBuckets, newData, newCapacity, newTakenSize, size);
+    map.body := (newBuckets, newData, newCapacity, size, size);
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -61,9 +64,9 @@ module {
   public func get<K, V>(map: Map<K, V>, (getHash, areEqual): HashUtils<K>, key: K): ?V {
     let (buckets, data, capacity, _, _) = map.body;
 
-    var index = buckets[toNat(getHash(key) % capacity)];
+    var index = buckets[getHash(key) % capacity];
 
-    loop if (index == 0) return null else switch (data[toNat(index - 1)]) {
+    loop if (index == NULL_INDEX) return null else switch (data[index]) {
       case (?entryKey, value, _, nextIndex) {
         if (areEqual(entryKey, key)) return value;
 
@@ -84,15 +87,15 @@ module {
     let (buckets, data, capacity, takenSize, size) = map.body;
 
     let hash = getHash(key);
-    let bucketIndex = toNat(hash % capacity);
+    let bucketIndex = hash % capacity;
     let firstIndex = buckets[bucketIndex];
     var index = firstIndex;
 
-    loop if (index == 0) {
+    loop if (index == NULL_INDEX) {
       let newTakenSize = takenSize + 1;
 
-      data[toNat(takenSize)] := (?key, ?value, hash, firstIndex);
-      buckets[bucketIndex] := newTakenSize;
+      data[takenSize] := (?key, ?value, hash, firstIndex);
+      buckets[bucketIndex] := takenSize;
 
       map.body := (buckets, data, capacity, newTakenSize, size + 1);
 
@@ -100,12 +103,10 @@ module {
 
       return null;
     } else {
-      let dataIndex = toNat(index - 1);
-
-      switch (data[dataIndex]) {
+      switch (data[index]) {
         case (?entryKey, prevValue, hash, nextIndex) {
           if (areEqual(entryKey, key)) {
-            data[dataIndex] := (?entryKey, ?value, hash, nextIndex);
+            data[index] := (?entryKey, ?value, hash, nextIndex);
 
             return prevValue;
           };
@@ -127,17 +128,15 @@ module {
   public func remove<K, V>(map: Map<K, V>, (getHash, areEqual): HashUtils<K>, key: K): ?V {
     let (buckets, data, capacity, takenSize, size) = map.body;
 
-    var index = buckets[toNat(getHash(key) % capacity)];
+    var index = buckets[getHash(key) % capacity];
 
-    loop if (index == 0) return null else {
-      let dataIndex = toNat(index - 1);
-
-      switch (data[dataIndex]) {
+    loop if (index == NULL_INDEX) return null else {
+      switch (data[index]) {
         case (?entryKey, prevValue, _, nextIndex) {
           if (areEqual(entryKey, key)) {
-            let newSize = size - 1;
+            let newSize: Nat = size - 1;
 
-            data[dataIndex] := if (nextIndex != 0) (null, null, 0, nextIndex) else emptyEntry;
+            data[index] := if (nextIndex != NULL_INDEX) (null, null, 0, nextIndex) else NULL_ENTRY;
 
             map.body := (buckets, data, capacity, takenSize, newSize);
 
@@ -163,15 +162,15 @@ module {
   public func map<K, V1, V2>(map: Map<K, V1>, fn: (key: K, value: V1) -> V2): Map<K, V2> {
     let (buckets, data, capacity, takenSize, size) = map.body;
 
-    let newBuckets = initArray<Nat32>(toNat(capacity), 0);
-    let newData = initArray<Entry<K, V2>>(toNat(capacity), emptyEntry);
+    let newBuckets = initArray<Nat>(capacity, NULL_INDEX);
+    let newData = initArray<Entry<K, V2>>(capacity, NULL_ENTRY);
 
     for (index in buckets.keys()) {
       newBuckets[index] := buckets[index];
 
       switch (data[index]) {
         case (?key, ?prevValue, hash, nextIndex) newData[index] := (?key, ?fn(key, prevValue), hash, nextIndex);
-        case (_, _, hash, nextIndex) if (nextIndex != 0) newData[index] := (null, null, hash, nextIndex);
+        case (_, _, _, nextIndex) if (nextIndex != NULL_INDEX) newData[index] := (null, null, 0, nextIndex);
       };
     };
 
@@ -183,17 +182,17 @@ module {
   public func mapFilter<K, V1, V2>(map: Map<K, V1>, fn: (key: K, value: V1) -> ?V2): Map<K, V2> {
     let (_, data, _, takenSize, _) = map.body;
 
-    let newBuckets = initArray<Nat32>(0, 0);
-    let newData = initArray<Entry<K, V2>>(toNat(takenSize), emptyEntry);
-    var newCapacity = 2:Nat32;
-    var newSize = 0:Nat32;
+    let newBuckets = initArray<Nat>(0, NULL_INDEX);
+    let newData = initArray<Entry<K, V2>>(takenSize, NULL_ENTRY);
+    var newCapacity = 2;
+    var newSize = 0;
 
     for (entry in data.vals()) switch (entry) {
       case (?key, ?prevValue, hash, _) switch (fn(key, prevValue)) {
         case (null) {};
 
         case (value) {
-          newData[toNat(newSize)] := (?key, value, hash, 0);
+          newData[newSize] := (?key, value, hash, NULL_INDEX);
 
           newSize += 1;
 
@@ -220,11 +219,11 @@ module {
   func iter<K, V, T>(map: Map<K, V>, fn: (key: K, value: V) -> T): Iter.Iter<T> {
     let (_, data, _, takenSize, _) = map.body;
 
-    var index = 0:Nat32;
+    var index = 0;
 
     return {
       next = func(): ?T {
-        loop if (index >= takenSize) return null else switch (data[toNat(index)]) {
+        loop if (index >= takenSize) return null else switch (data[index]) {
           case (?key, ?value, _, _) {
             index += 1;
 
@@ -291,7 +290,7 @@ module {
     while (index != 0) {
       index -= 1;
 
-      switch (data[toNat(index)]) { case (?key, ?value, _, _) if (fn(key, value)) return ?(key, value); case (_) {} };
+      switch (data[index]) { case (?key, ?value, _, _) if (fn(key, value)) return ?(key, value); case (_) {} };
     };
 
     return null;
@@ -300,11 +299,11 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func new<K, V>(): Map<K, V> {
-    return { var body = (initArray<Nat32>(2, 0), initArray<Entry<K, V>>(2, emptyEntry), 2, 0, 0) };
+    return { var body = (initArray<Nat>(2, NULL_INDEX), initArray<Entry<K, V>>(2, NULL_ENTRY), 2, 0, 0) };
   };
 
   public func clear<K, V>(map: Map<K, V>) {
-    map.body := (initArray<Nat32>(2, 0), initArray<Entry<K, V>>(2, emptyEntry), 2, 0, 0);
+    map.body := (initArray<Nat>(2, NULL_INDEX), initArray<Entry<K, V>>(2, NULL_ENTRY), 2, 0, 0);
   };
 
   public func fromIter<K, V>(iter: Iter.Iter<(K, V)>, hashUtils: HashUtils<K>): Map<K, V> {
@@ -318,6 +317,6 @@ module {
   public func size<K, V>(map: Map<K, V>): Nat {
     let (_, _, _, _, size) = map.body;
 
-    return toNat(size);
+    return size;
   };
 };
