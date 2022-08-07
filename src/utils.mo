@@ -11,17 +11,11 @@ module {
   public func hashInt(key: Int): Nat {
     var hash = Prim.intToNat32Wrap(key);
 
-    hash := (hash << 15) -% hash -% 1;
-    hash := hash ^ (hash >> 12);
-    hash := hash +% (hash << 2);
-    hash := hash ^ (hash >> 4);
-    hash := hash *% 2057;
-    hash := hash ^ (hash >> 16);
+    hash := hash >> 16 ^ hash *% 0x21f0aaad;
+    hash := hash >> 15 ^ hash *% 0x735a2d97;
 
-    return Prim.nat32ToNat(hash & 0x3fffffff);
+    return Prim.nat32ToNat(hash >> 15 ^ hash & 0x3fffffff);
   };
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func hashText(key: Text): Nat {
     return Prim.nat32ToNat(Prim.hashBlob(Prim.encodeUtf8(key)) & 0x3fffffff);

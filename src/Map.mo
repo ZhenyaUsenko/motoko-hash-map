@@ -102,20 +102,18 @@ module {
       if (newTakenSize == capacity) rehash(map);
 
       return null;
-    } else {
-      switch (data[index]) {
-        case (?entryKey, prevValue, hash, nextIndex) {
-          if (areEqual(entryKey, key)) {
-            data[index] := (?entryKey, ?value, hash, nextIndex);
+    } else switch (data[index]) {
+      case (?entryKey, prevValue, hash, nextIndex) {
+        if (areEqual(entryKey, key)) {
+          data[index] := (?entryKey, ?value, hash, nextIndex);
 
-            return prevValue;
-          };
-
-          index := nextIndex;
+          return prevValue;
         };
 
-        case (_, _, _, nextIndex) index := nextIndex;
+        index := nextIndex;
       };
+
+      case (_, _, _, nextIndex) index := nextIndex;
     };
   };
 
@@ -130,26 +128,24 @@ module {
 
     var index = buckets[getHash(key) % capacity];
 
-    loop if (index == NULL_INDEX) return null else {
-      switch (data[index]) {
-        case (?entryKey, prevValue, _, nextIndex) {
-          if (areEqual(entryKey, key)) {
-            let newSize: Nat = size - 1;
+    loop if (index == NULL_INDEX) return null else switch (data[index]) {
+      case (?entryKey, prevValue, _, nextIndex) {
+        if (areEqual(entryKey, key)) {
+          let newSize: Nat = size - 1;
 
-            data[index] := if (nextIndex != NULL_INDEX) (null, null, 0, nextIndex) else NULL_ENTRY;
+          data[index] := if (nextIndex != NULL_INDEX) (null, null, 0, nextIndex) else NULL_ENTRY;
 
-            map.body := (buckets, data, capacity, takenSize, newSize);
+          map.body := (buckets, data, capacity, takenSize, newSize);
 
-            if (newSize < capacity / 4) rehash(map);
+          if (newSize < capacity / 4) rehash(map);
 
-            return prevValue;
-          };
-
-          index := nextIndex;
+          return prevValue;
         };
 
-        case (_, _, _, nextIndex) index := nextIndex;
+        index := nextIndex;
       };
+
+      case (_, _, _, nextIndex) index := nextIndex;
     };
   };
 
@@ -170,6 +166,7 @@ module {
 
       switch (data[index]) {
         case (?key, ?prevValue, hash, nextIndex) newData[index] := (?key, ?fn(key, prevValue), hash, nextIndex);
+
         case (_, _, _, nextIndex) if (nextIndex != NULL_INDEX) newData[index] := (null, null, 0, nextIndex);
       };
     };
@@ -211,7 +208,7 @@ module {
   };
 
   public func filter<K, V>(map: Map<K, V>, fn: (key: K, value: V) -> Bool): Map<K, V> {
-    return mapFilter(map, func(key: K, value: V): ?V { if (fn(key, value)) ?value else null });
+    return mapFilter<K, V, V>(map, func(key, value) { if (fn(key, value)) ?value else null });
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

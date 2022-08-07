@@ -31,8 +31,8 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  func rehash<K>(map: Set<K>) {
-    let (_, data, capacity, _, size) = map.body;
+  func rehash<K>(set: Set<K>) {
+    let (_, data, capacity, _, size) = set.body;
 
     let newCapacity = if (size < capacity / 4) capacity / 2 else if (size > capacity * 3 / 4) capacity * 2 else capacity;
 
@@ -55,13 +55,13 @@ module {
       };
     };
 
-    map.body := (newBuckets, newData, newCapacity, size, size);
+    set.body := (newBuckets, newData, newCapacity, size, size);
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func has<K>(map: Set<K>, (getHash, areEqual): HashUtils<K>, key: K): Bool {
-    let (buckets, data, capacity, _, _) = map.body;
+  public func has<K>(set: Set<K>, (getHash, areEqual): HashUtils<K>, key: K): Bool {
+    let (buckets, data, capacity, _, _) = set.body;
 
     var index = buckets[getHash(key) % capacity];
 
@@ -78,8 +78,8 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func put<K>(map: Set<K>, (getHash, areEqual): HashUtils<K>, key: K): Bool {
-    let (buckets, data, capacity, takenSize, size) = map.body;
+  public func put<K>(set: Set<K>, (getHash, areEqual): HashUtils<K>, key: K): Bool {
+    let (buckets, data, capacity, takenSize, size) = set.body;
 
     let hash = getHash(key);
     let bucketIndex = hash % capacity;
@@ -92,69 +92,65 @@ module {
       data[takenSize] := (?key, hash, firstIndex);
       buckets[bucketIndex] := takenSize;
 
-      map.body := (buckets, data, capacity, newTakenSize, size + 1);
+      set.body := (buckets, data, capacity, newTakenSize, size + 1);
 
-      if (newTakenSize == capacity) rehash(map);
+      if (newTakenSize == capacity) rehash(set);
 
       return false;
-    } else {
-      switch (data[index]) {
-        case (?entryKey, _, nextIndex) {
-          if (areEqual(entryKey, key)) return true;
+    } else switch (data[index]) {
+      case (?entryKey, _, nextIndex) {
+        if (areEqual(entryKey, key)) return true;
 
-          index := nextIndex;
-        };
-
-        case (_, _, nextIndex) index := nextIndex;
+        index := nextIndex;
       };
+
+      case (_, _, nextIndex) index := nextIndex;
     };
   };
 
-  public func add<K>(map: Set<K>, hashUtils: HashUtils<K>, key: K) {
-    ignore put(map, hashUtils, key);
+  public func add<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K) {
+    ignore put(set, hashUtils, key);
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func remove<K>(map: Set<K>, (getHash, areEqual): HashUtils<K>, key: K): Bool {
-    let (buckets, data, capacity, takenSize, size) = map.body;
+  public func remove<K>(set: Set<K>, (getHash, areEqual): HashUtils<K>, key: K): Bool {
+    let (buckets, data, capacity, takenSize, size) = set.body;
 
     var index = buckets[getHash(key) % capacity];
 
-    loop if (index == NULL_INDEX) return false else {
-      switch (data[index]) {
-        case (?entryKey, _, nextIndex) {
-          if (areEqual(entryKey, key)) {
-            let newSize: Nat = size - 1;
+    loop if (index == NULL_INDEX) return false else switch (data[index]) {
+      case (?entryKey, _, nextIndex) {
+        if (areEqual(entryKey, key)) {
+          let newSize: Nat = size - 1;
 
-            data[index] := if (nextIndex != NULL_INDEX) (null, 0, nextIndex) else NULL_ENTRY;
+          data[index] := if (nextIndex != NULL_INDEX) (null, 0, nextIndex) else NULL_ENTRY;
 
-            map.body := (buckets, data, capacity, takenSize, newSize);
+          set.body := (buckets, data, capacity, takenSize, newSize);
 
-            if (newSize < capacity / 4) rehash(map);
+          if (newSize < capacity / 4) rehash(set);
 
-            return true;
-          };
-
-          index := nextIndex;
+          return true;
         };
 
-        case (_, _, nextIndex) index := nextIndex;
+        index := nextIndex;
       };
+
+      case (_, _, nextIndex) index := nextIndex;
     };
   };
 
-  public func delete<K>(map: Set<K>, hashUtils: HashUtils<K>, key: K) {
-    ignore remove(map, hashUtils, key);
+  public func delete<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K) {
+    ignore remove(set, hashUtils, key);
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func filter<K>(map: Set<K>, fn: (key: K) -> Bool): Set<K> {
-    let (_, data, capacity, _, _) = map.body;
+  public func filter<K>(set: Set<K>, fn: (key: K) -> Bool): Set<K> {
+    let (_, data, _, takenSize, _) = set.body;
 
     let newBuckets = initArray<Nat>(0, NULL_INDEX);
-    let newData = initArray<Entry<K>>(capacity, NULL_ENTRY);
+    let newData = initArray<Entry<K>>(takenSize, NULL_ENTRY);
     var newCapacity = 2;
     var newSize = 0;
 
@@ -170,17 +166,17 @@ module {
       case (_) {};
     };
 
-    let newMap = { var body = (newBuckets, newData, newCapacity, newSize, newSize) };
+    let newSet = { var body = (newBuckets, newData, newCapacity, newSize, newSize) };
 
-    rehash(newMap);
+    rehash(newSet);
 
-    return newMap;
+    return newSet;
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func keys<K>(map: Set<K>): Iter.Iter<K> {
-    let (_, data, _, takenSize, _) = map.body;
+  public func keys<K>(set: Set<K>): Iter.Iter<K> {
+    let (_, data, _, takenSize, _) = set.body;
 
     var index = 0;
 
@@ -201,22 +197,22 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func forEach<K>(map: Set<K>, fn: (key: K) -> ()) {
-    let (_, data, _, _, _) = map.body;
+  public func forEach<K>(set: Set<K>, fn: (key: K) -> ()) {
+    let (_, data, _, _, _) = set.body;
 
     for (entry in data.vals()) switch (entry) { case (?key, _, _) fn(key); case (_) {} };
   };
 
-  public func some<K>(map: Set<K>, fn: (key: K) -> Bool): Bool {
-    let (_, data, _, _, _) = map.body;
+  public func some<K>(set: Set<K>, fn: (key: K) -> Bool): Bool {
+    let (_, data, _, _, _) = set.body;
 
     for (entry in data.vals()) switch (entry) { case (?key, _, _) if (fn(key)) return true; case (_) {} };
 
     return false;
   };
 
-  public func every<K>(map: Set<K>, fn: (key: K) -> Bool): Bool {
-    let (_, data, _, _, _) = map.body;
+  public func every<K>(set: Set<K>, fn: (key: K) -> Bool): Bool {
+    let (_, data, _, _, _) = set.body;
 
     for (entry in data.vals()) switch (entry) { case (?key, _, _) if (not fn(key)) return false; case (_) {} };
 
@@ -225,16 +221,16 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func find<K>(map: Set<K>, fn: (key: K) -> Bool): ?K {
-    let (_, data, _, _, _) = map.body;
+  public func find<K>(set: Set<K>, fn: (key: K) -> Bool): ?K {
+    let (_, data, _, _, _) = set.body;
 
     for (entry in data.vals()) switch (entry) { case (?key, _, _) if (fn(key)) return ?key; case (_) {} };
 
     return null;
   };
 
-  public func findLast<K>(map: Set<K>, fn: (key: K) -> Bool): ?K {
-    let (_, data, _, takenSize, _) = map.body;
+  public func findLast<K>(set: Set<K>, fn: (key: K) -> Bool): ?K {
+    let (_, data, _, takenSize, _) = set.body;
 
     var index = takenSize;
 
@@ -253,20 +249,20 @@ module {
     return { var body = (initArray<Nat>(2, NULL_INDEX), initArray<Entry<K>>(2, NULL_ENTRY), 2, 0, 0) };
   };
 
-  public func clear<K>(map: Set<K>) {
-    map.body := (initArray<Nat>(2, NULL_INDEX), initArray<Entry<K>>(2, NULL_ENTRY), 2, 0, 0);
+  public func clear<K>(set: Set<K>) {
+    set.body := (initArray<Nat>(2, NULL_INDEX), initArray<Entry<K>>(2, NULL_ENTRY), 2, 0, 0);
   };
 
   public func fromIter<K>(iter: Iter.Iter<K>, hashUtils: HashUtils<K>): Set<K> {
-    let map = new<K>();
+    let set = new<K>();
 
-    for (key in iter) ignore put(map, hashUtils, key);
+    for (key in iter) ignore put(set, hashUtils, key);
 
-    return map;
+    return set;
   };
 
-  public func size<K>(map: Set<K>): Nat {
-    let (_, _, _, _, size) = map.body;
+  public func size<K>(set: Set<K>): Nat {
+    let (_, _, _, _, size) = set.body;
 
     return size;
   };
