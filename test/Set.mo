@@ -85,16 +85,16 @@ module {
     assert Set.find<Text>(set, func(key) { key == "topic" }) == ?"topic";
     assert Set.find<Text>(set, func(key) { key == "assistance" }) == ?"assistance";
 
-    assert Set.findLast<Text>(set, func(key) { key == "climate" }) == ?"climate";
-    assert Set.findLast<Text>(set, func(key) { key == "decision" }) == ?"decision";
-    assert Set.findLast<Text>(set, func(key) { key == "topic" }) == ?"topic";
-    assert Set.findLast<Text>(set, func(key) { key == "assistance" }) == ?"assistance";
+    assert Set.findDesc<Text>(set, func(key) { key == "climate" }) == ?"climate";
+    assert Set.findDesc<Text>(set, func(key) { key == "decision" }) == ?"decision";
+    assert Set.findDesc<Text>(set, func(key) { key == "topic" }) == ?"topic";
+    assert Set.findDesc<Text>(set, func(key) { key == "assistance" }) == ?"assistance";
 
     assert Set.find<Text>(set, func(key) { key.size() < 5 }) == ?"ear";
     assert Set.find<Text>(set, func(key) { key.size() == 10 }) == ?"importance";
 
-    assert Set.findLast<Text>(set, func(key) { key.size() < 5 }) == ?"food";
-    assert Set.findLast<Text>(set, func(key) { key.size() == 10 }) == ?"assistance";
+    assert Set.findDesc<Text>(set, func(key) { key.size() < 5 }) == ?"food";
+    assert Set.findDesc<Text>(set, func(key) { key.size() == 10 }) == ?"assistance";
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
