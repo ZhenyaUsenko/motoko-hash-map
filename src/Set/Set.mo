@@ -22,7 +22,7 @@ module {
 
   public let { ihash; nhash; thash; phash; bhash; lhash; useHash; calcHash } = Utils;
 
-  let { Array_init = initArray; nat32ToNat = nat; clzNat32 = clz } = Prim;
+  let { Array_tabulate = tabulateArray; Array_init = initArray; nat32ToNat = nat; clzNat32 = clz; trap } = Prim;
 
   let VALUE = 0; let PREV = 0; let NEXT = 1; let BUCKET_NEXT = 2;
 
@@ -348,6 +348,44 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  public func fromIter<K>(iter: Iter.Iter<K>, hashUtils: HashUtils<K>): Set<K> {
+    let newSet = new<K>();
+
+    for (key in iter) add(newSet, hashUtils, key);
+
+    return newSet;
+  };
+
+  public func toArray<K, T>(set: Set<K>, fn: (key: K) -> ?T): [T] {
+    let (_, _, edgeEntry) = set.body;
+
+    var entry = edgeEntry.0[NEXT];
+    var arraySize = 0:Nat32;
+
+    let array = tabulateArray<?T>(nat(set.size), func(_) {
+      loop switch (entry) {
+        case (_, ?key, _) switch (fn(key)) {
+          case (null) entry := entry.0[NEXT];
+
+          case (newValue) {
+            entry := entry.0[NEXT];
+            arraySize +%= 1;
+
+            return newValue;
+          };
+        };
+
+        case (_) return null;
+      };
+    });
+
+    return tabulateArray<T>(nat(arraySize), func(i) {
+      return switch (array[i]) { case (?item) item; case (_) trap("unreachable") }
+    });
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   public func new<K>(): Set<K> {
     let nullEntry: Entry<K> = ([var], null, 0);
     let newEdgeEntry: Entry<K> = ([var nullEntry, nullEntry, nullEntry], null, 0);
@@ -361,14 +399,6 @@ module {
   public func clear<K>(set: Set<K>) {
     set.body := new<K>().body;
     set.size := 0;
-  };
-
-  public func fromIter<K>(iter: Iter.Iter<K>, hashUtils: HashUtils<K>): Set<K> {
-    let newSet = new<K>();
-
-    for (key in iter) add(newSet, hashUtils, key);
-
-    return newSet;
   };
 
   public func size<K>(set: Set<K>): Nat {

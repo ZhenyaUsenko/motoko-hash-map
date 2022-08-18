@@ -16,5 +16,5 @@ module {
 
   public let { forEach; forEachDesc; some; someDesc; every; everyDesc; find; findDesc } = OptimizedSet;
 
-  public let { rehash; new; clear; fromIter; size } = OptimizedSet;
+  public let { fromIter; toArray; rehash; new; clear; size } = OptimizedSet;
 };
