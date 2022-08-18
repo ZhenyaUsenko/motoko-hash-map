@@ -23,7 +23,7 @@ module {
 
   public let { ihash; nhash; thash; phash; bhash; lhash; useHash; calcHash } = Utils;
 
-  let { Array_init = initArray; nat32ToNat = nat; clzNat32 = clz } = Prim;
+  let { Array_tabulate = tabulateArray; Array_init = initArray; nat32ToNat = nat; clzNat32 = clz; trap } = Prim;
 
   let VALUE = 0; let PREV = 0; let NEXT = 1; let BUCKET_NEXT = 2;
 
@@ -464,6 +464,44 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  public func fromIter<K, V>(iter: Iter.Iter<(K, V)>, hashUtils: HashUtils<K>): Map<K, V> {
+    let newMap = new<K, V>();
+
+    for ((key, value) in iter) set(newMap, hashUtils, key, value);
+
+    return newMap;
+  };
+
+  public func toArray<K, V, T>(map: Map<K, V>, fn: (key: K, value: V) -> ?T): [T] {
+    let (_, _, edgeEntry) = map.body;
+
+    var entry = edgeEntry.0[NEXT];
+    var arraySize = 0:Nat32;
+
+    let array = tabulateArray<?T>(nat(map.size), func(_) {
+      loop switch (entry) {
+        case (_, ?key, value, _) switch (fn(key, value[VALUE])) {
+          case (null) entry := entry.0[NEXT];
+
+          case (newValue) {
+            entry := entry.0[NEXT];
+            arraySize +%= 1;
+
+            return newValue;
+          };
+        };
+
+        case (_) return null;
+      };
+    });
+
+    return tabulateArray<T>(nat(arraySize), func(i) {
+      return switch (array[i]) { case (?item) item; case (_) trap("unreachable") }
+    });
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   public func new<K, V>(): Map<K, V> {
     let nullEntry: Entry<K, V> = ([var], null, [var], 0);
     let newEdgeEntry: Entry<K, V> = ([var nullEntry, nullEntry, nullEntry], null, [var], 0);
@@ -477,14 +515,6 @@ module {
   public func clear<K, V>(map: Map<K, V>) {
     map.body := new<K, V>().body;
     map.size := 0;
-  };
-
-  public func fromIter<K, V>(iter: Iter.Iter<(K, V)>, hashUtils: HashUtils<K>): Map<K, V> {
-    let newMap = new<K, V>();
-
-    for ((key, value) in iter) set(newMap, hashUtils, key, value);
-
-    return newMap;
   };
 
   public func size<K, V>(map: Map<K, V>): Nat {
