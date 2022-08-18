@@ -4,7 +4,7 @@ import OptimizedSet "./Set";
 module {
   public type Entry<K> = OptimizedSet.Entry<K>;
 
-  public type Map<K> = OptimizedSet.Set<K>;
+  public type Set<K> = OptimizedSet.Set<K>;
 
   public type HashUtils<K> = OptimizedSet.HashUtils<K>;
 
