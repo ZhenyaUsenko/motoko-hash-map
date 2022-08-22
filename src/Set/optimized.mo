@@ -31,78 +31,72 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func rehash<K>(set: Set<K>) {
-    let (buckets, capacity, edgeEntry) = set.body;
+    let body = set.body;
 
     let newCapacity = 2 **% (33 -% clz(set.size));
-    let newBuckets = initArray<Entry<K>>(nat(newCapacity), edgeEntry);
-    var entry = edgeEntry.0[NEXT];
+    let newBuckets = initArray<Entry<K>>(nat(newCapacity), body.2);
+    var entry = body.2.0[NEXT];
 
     loop {
-      let (links, key, hash) = entry;
+      if (entry.2 == NULL_HASH) return set.body := (newBuckets, newCapacity, body.2) else {
+        let bucketIndex = nat(entry.2 % newCapacity);
 
-      if (hash == NULL_HASH) return set.body := (newBuckets, newCapacity, edgeEntry) else {
-        let bucketIndex = nat(hash % newCapacity);
-
-        links[BUCKET_NEXT] := newBuckets[bucketIndex];
+        entry.0[BUCKET_NEXT] := newBuckets[bucketIndex];
         newBuckets[bucketIndex] := entry;
-        entry := links[NEXT];
+        entry := entry.0[NEXT];
       };
     };
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func has<K>(set: Set<K>, (getHash, areEqual, getNullKey): HashUtils<K>, keyParam: K): Bool {
-    let (buckets, capacity, edgeEntry) = set.body;
+  public func has<K>(set: Set<K>, hashUtils: HashUtils<K>, keyParam: K): Bool {
+    let body = set.body;
 
-    let hashParam = getHash(keyParam);
-    var entry = buckets[nat(hashParam % capacity)];
+    let hashParam = hashUtils.0(keyParam);
+    var entry = body.0[nat(hashParam % body.1)];
 
     loop {
-      let (links, key, hash) = entry;
-
-      if (hash == hashParam and areEqual(key, keyParam)) {
+      if (entry.2 == hashParam and hashUtils.1(entry.1, keyParam)) {
         return true;
-      } else if (hash == NULL_HASH) {
+      } else if (entry.2 == NULL_HASH) {
         return false;
       } else {
-        entry := links[BUCKET_NEXT];
+        entry := entry.0[BUCKET_NEXT];
       };
     };
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  func putHelper<K>(set: Set<K>, (getHash, areEqual, getNullKey): HashUtils<K>, keyParam: K, DPREV: Nat, DNEXT: Nat): Bool {
-    let (buckets, capacity, edgeEntry) = set.body;
+  func putHelper<K>(set: Set<K>, hashUtils: HashUtils<K>, keyParam: K, DPREV: Nat, DNEXT: Nat): Bool {
+    let body = set.body;
 
-    let hashParam = getHash(keyParam);
-    let bucketIndex = nat(hashParam % capacity);
-    let bucketEntry = buckets[bucketIndex];
+    let hashParam = hashUtils.0(keyParam);
+    let bucketIndex = nat(hashParam % body.1);
+    let bucketEntry = body.0[bucketIndex];
     var entry = bucketEntry;
 
     loop {
-      let (links, key, hash) = entry;
-
-      if (hash == NULL_HASH) {
+      if (entry.2 == NULL_HASH) {
         let newSize = set.size +% 1;
-        let prevEntry = edgeEntry.0[DPREV];
+        let prevEntry = body.2.0[DPREV];
 
-        let newLinks = if (DPREV == PREV) [var prevEntry, edgeEntry, bucketEntry] else [var edgeEntry, prevEntry, bucketEntry];
+        let newLinks = if (DPREV == PREV) [var prevEntry, body.2, bucketEntry] else [var body.2, prevEntry, bucketEntry];
         let newEntry = (newLinks, keyParam, hashParam);
 
         prevEntry.0[DNEXT] := newEntry;
-        edgeEntry.0[DPREV] := newEntry;
-        buckets[bucketIndex] := newEntry;
+        body.2.0[DPREV] := newEntry;
+        body.0[bucketIndex] := newEntry;
         set.size := newSize;
 
-        if (newSize == capacity) rehash(set);
+        if (newSize == body.1) rehash(set);
 
         return false;
-      } else if (hash == hashParam and areEqual(key, keyParam)) {
+      } else if (entry.2 == hashParam and hashUtils.1(entry.1, keyParam)) {
         return true;
       } else {
-        entry := links[BUCKET_NEXT];
+        entry := entry.0[BUCKET_NEXT];
       };
     };
   };
@@ -125,35 +119,33 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func remove<K>(set: Set<K>, (getHash, areEqual, getNullKey): HashUtils<K>, keyParam: K): Bool {
-    let (buckets, capacity, edgeEntry) = set.body;
+  public func remove<K>(set: Set<K>, hashUtils: HashUtils<K>, keyParam: K): Bool {
+    let body = set.body;
 
-    let hashParam = getHash(keyParam);
-    let bucketIndex = nat(hashParam % capacity);
-    var entry = buckets[bucketIndex];
-    var bucketPrev = edgeEntry;
+    let hashParam = hashUtils.0(keyParam);
+    let bucketIndex = nat(hashParam % body.1);
+    var entry = body.0[bucketIndex];
+    var bucketPrev = body.2;
 
     loop {
-      let (links, key, hash) = entry;
-
-      if (hash == hashParam and areEqual(key, keyParam)) {
+      if (entry.2 == hashParam and hashUtils.1(entry.1, keyParam)) {
         let size = set.size;
-        let prevEntry = links[PREV];
-        let nextEntry = links[NEXT];
+        let prevEntry = entry.0[PREV];
+        let nextEntry = entry.0[NEXT];
 
         prevEntry.0[NEXT] := nextEntry;
         nextEntry.0[PREV] := prevEntry;
         set.size := size -% 1;
 
-        if (bucketPrev.2 == NULL_HASH) buckets[bucketIndex] := links[BUCKET_NEXT] else bucketPrev.0[BUCKET_NEXT] := links[BUCKET_NEXT];
-        if (size == capacity / 8) rehash(set);
+        if (bucketPrev.2 == NULL_HASH) body.0[bucketIndex] := entry.0[BUCKET_NEXT] else bucketPrev.0[BUCKET_NEXT] := entry.0[BUCKET_NEXT];
+        if (size == body.1 / 8) rehash(set);
 
         return true;
-      } else if (hash == NULL_HASH) {
+      } else if (entry.2 == NULL_HASH) {
         return false;
       } else {
         bucketPrev := entry;
-        entry := links[BUCKET_NEXT];
+        entry := entry.0[BUCKET_NEXT];
       };
     };
   };
@@ -169,29 +161,27 @@ module {
 
     if (size == 0) return null;
 
-    let (buckets, capacity, edgeEntry) = set.body;
+    let body = set.body;
 
-    let bucketIndex = nat(edgeEntry.0[DPREV].2 % capacity);
-    var entry = buckets[bucketIndex];
-    var bucketPrev = edgeEntry;
+    let bucketIndex = nat(body.2.0[DPREV].2 % body.1);
+    var entry = body.0[bucketIndex];
+    var bucketPrev = body.2;
 
     loop {
-      let (links, key, hash) = entry;
+      if (entry.0[DNEXT].2 == NULL_HASH) {
+        let prevEntry = entry.0[DPREV];
 
-      if (links[DNEXT].2 == NULL_HASH) {
-        let prevEntry = links[DPREV];
-
-        prevEntry.0[DNEXT] := edgeEntry;
-        edgeEntry.0[DPREV] := prevEntry;
+        prevEntry.0[DNEXT] := body.2;
+        body.2.0[DPREV] := prevEntry;
         set.size := size -% 1;
 
-        if (bucketPrev.2 == NULL_HASH) buckets[bucketIndex] := links[BUCKET_NEXT] else bucketPrev.0[BUCKET_NEXT] := links[BUCKET_NEXT];
-        if (size == capacity / 8) rehash(set);
+        if (bucketPrev.2 == NULL_HASH) body.0[bucketIndex] := entry.0[BUCKET_NEXT] else bucketPrev.0[BUCKET_NEXT] := entry.0[BUCKET_NEXT];
+        if (size == body.1 / 8) rehash(set);
 
-        return ?key;
+        return ?entry.1;
       } else {
         bucketPrev := entry;
-        entry := links[BUCKET_NEXT];
+        entry := entry.0[BUCKET_NEXT];
       };
     };
   };
@@ -207,50 +197,44 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func peek<K>(set: Set<K>): ?K {
-    let (buckets, capacity, edgeEntry) = set.body;
+    let entry = set.body.2.0[PREV];
 
-    let (links, key, hash) = edgeEntry.0[PREV];
-
-    return if (hash == NULL_HASH) null else ?key;
+    return if (entry.2 == NULL_HASH) null else ?entry.1;
   };
 
   public func peekFront<K>(set: Set<K>): ?K {
-    let (buckets, capacity, edgeEntry) = set.body;
+    let entry = set.body.2.0[NEXT];
 
-    let (links, key, hash) = edgeEntry.0[NEXT];
-
-    return if (hash == NULL_HASH) null else ?key;
+    return if (entry.2 == NULL_HASH) null else ?entry.1;
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func filter<K>(set: Set<K>, fn: (K) -> Bool): Set<K> {
-    let (buckets, capacity, edgeEntry) = set.body;
+    let body = set.body;
 
-    let newEdgeEntry = createEdgeEntry<K>(edgeEntry.1);
-    var entry = edgeEntry.0[NEXT];
+    let newEdgeEntry = createEdgeEntry<K>(body.2.1);
+    var entry = body.2.0[NEXT];
     var prevEntry = newEdgeEntry;
     var newSize = 0:Nat32;
 
     loop {
-      let (links, key, hash) = entry;
-
-      if (hash == NULL_HASH) {
+      if (entry.2 == NULL_HASH) {
         let newSet: Set<K> = { var body = ([var], 0, newEdgeEntry); var size = newSize };
 
         newEdgeEntry.0[PREV] := prevEntry;
         rehash(newSet);
 
         return newSet;
-      } else if (fn(key)) {
-        let newEntry = ([var prevEntry, newEdgeEntry, newEdgeEntry], key, hash);
+      } else if (fn(entry.1)) {
+        let newEntry = ([var prevEntry, newEdgeEntry, newEdgeEntry], entry.1, entry.2);
 
         prevEntry.0[NEXT] := newEntry;
         prevEntry := newEntry;
-        entry := links[NEXT];
+        entry := entry.0[NEXT];
         newSize +%= 1;
       } else {
-        entry := links[NEXT];
+        entry := entry.0[NEXT];
       };
     };
   };
@@ -258,46 +242,34 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func keys<K>(set: Set<K>): Iter.Iter<K> = object {
-    let (buckets, capacity, edgeEntry) = set.body;
-
-    var entry = edgeEntry;
+    var entry = set.body.2;
 
     public func next(): ?K {
       entry := entry.0[NEXT];
 
-      let (links, key, hash) = entry;
-
-      return if (hash == NULL_HASH) null else ?key;
+      return if (entry.2 == NULL_HASH) null else ?entry.1;
     };
   };
 
   public func keysDesc<K>(set: Set<K>): Iter.Iter<K> = object {
-    let (buckets, capacity, edgeEntry) = set.body;
-
-    var entry = edgeEntry;
+    var entry = set.body.2;
 
     public func next(): ?K {
       entry := entry.0[PREV];
 
-      let (links, key, hash) = entry;
-
-      return if (hash == NULL_HASH) null else ?key;
+      return if (entry.2 == NULL_HASH) null else ?entry.1;
     };
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   func existHelper<K>(set: Set<K>, fn: (K) -> Bool, DNEXT: Nat): Bool {
-    let (buckets, capacity, edgeEntry) = set.body;
-
-    var entry = edgeEntry;
+    var entry = set.body.2;
 
     loop {
       entry := entry.0[DNEXT];
 
-      let (links, key, hash) = entry;
-
-      if (hash == NULL_HASH) return false else if (fn(key)) return true;
+      if (entry.2 == NULL_HASH) return false else if (fn(entry.1)) return true;
     };
   };
 
@@ -328,30 +300,22 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func find<K>(set: Set<K>, fn: (K) -> Bool): ?K {
-    let (buckets, capacity, edgeEntry) = set.body;
-
-    var entry = edgeEntry;
+    var entry = set.body.2;
 
     loop {
       entry := entry.0[NEXT];
 
-      let (links, key, hash) = entry;
-
-      if (hash == NULL_HASH) return null else if (fn(key)) return ?key;
+      if (entry.2 == NULL_HASH) return null else if (fn(entry.1)) return ?entry.1;
     };
   };
 
   public func findDesc<K>(set: Set<K>, fn: (K) -> Bool): ?K {
-    let (buckets, capacity, edgeEntry) = set.body;
-
-    var entry = edgeEntry;
+    var entry = set.body.2;
 
     loop {
       entry := entry.0[PREV];
 
-      let (links, key, hash) = entry;
-
-      if (hash == NULL_HASH) return null else if (fn(key)) return ?key;
+      if (entry.2 == NULL_HASH) return null else if (fn(entry.1)) return ?entry.1;
     };
   };
 
@@ -366,25 +330,21 @@ module {
   };
 
   public func toArray<K, T>(set: Set<K>, fn: (K) -> ?T): [T] {
-    let (buckets, capacity, edgeEntry) = set.body;
-
     let array = initArray<?T>(nat(set.size), null);
-    var entry = edgeEntry.0[NEXT];
+    var entry = set.body.2.0[NEXT];
     var arraySize = 0:Nat32;
 
     loop {
-      let (links, key, hash) = entry;
-
-      if (hash == NULL_HASH) {
+      if (entry.2 == NULL_HASH) {
         return tabulateArray<T>(nat(arraySize), func(i) {
           switch (array[i]) { case (?item) item; case (_) trap("unreachable") };
         });
-      } else switch (fn(key)) {
-        case (null) entry := links[NEXT];
+      } else switch (fn(entry.1)) {
+        case (null) entry := entry.0[NEXT];
 
         case (newValue) {
           array[nat(arraySize)] := newValue;
-          entry := links[NEXT];
+          entry := entry.0[NEXT];
           arraySize +%= 1;
         };
       };
@@ -403,16 +363,14 @@ module {
     return newEdgeEntry;
   };
 
-  public func new<K>((getHash, areEqual, getNullKey): HashUtils<K>): Set<K> {
-    let newEdgeEntry = createEdgeEntry<K>(getNullKey());
+  public func new<K>(hashUtils: HashUtils<K>): Set<K> {
+    let newEdgeEntry = createEdgeEntry<K>(hashUtils.2());
 
     return { var body = ([var newEdgeEntry, newEdgeEntry], 2, newEdgeEntry); var size = 0 };
   };
 
   public func clear<K>(set: Set<K>) {
-    let (buckets, capacity, edgeEntry) = set.body;
-
-    let newEdgeEntry = createEdgeEntry<K>(edgeEntry.1);
+    let newEdgeEntry = createEdgeEntry<K>(set.body.2.1);
 
     set.body := ([var newEdgeEntry, newEdgeEntry], 2, newEdgeEntry);
     set.size := 0;

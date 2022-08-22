@@ -5,7 +5,7 @@ import Utils "../utils";
 module {
   public type Entry<K, V> = (
     links: [var Entry<K, V>],
-    key: ?K,
+    key: K,
     value: [var V],
     hash: Nat32,
   );
@@ -27,6 +27,8 @@ module {
 
   let VALUE = 0; let PREV = 0; let NEXT = 1; let BUCKET_NEXT = 2;
 
+  let NULL_HASH = 0xffffffff:Nat32;
+
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func rehash<K, V>(map: Map<K, V>) {
@@ -36,16 +38,14 @@ module {
     let newBuckets = initArray<Entry<K, V>>(nat(newCapacity), body.2);
     var entry = body.2.0[NEXT];
 
-    loop switch (entry.1) {
-      case (?_) {
+    loop {
+      if (entry.3 == NULL_HASH) return map.body := (newBuckets, newCapacity, body.2) else {
         let bucketIndex = nat(entry.3 % newCapacity);
 
         entry.0[BUCKET_NEXT] := newBuckets[bucketIndex];
         newBuckets[bucketIndex] := entry;
         entry := entry.0[NEXT];
       };
-
-      case (_) return map.body := (newBuckets, newCapacity, body.2);
     };
   };
 
@@ -57,14 +57,10 @@ module {
     let hashParam = hashUtils.0(keyParam);
     var entry = body.0[nat(hashParam % body.1)];
 
-    loop switch (entry.1) {
-      case (?key) {
-        if (entry.3 == hashParam and hashUtils.1(key, keyParam)) return ?entry.2[VALUE];
-
+    loop {
+      if (entry.3 == hashParam and hashUtils.1(entry.1, keyParam)) return ?entry.2[VALUE] else if (entry.3 == NULL_HASH) return null else {
         entry := entry.0[BUCKET_NEXT];
       };
-
-      case (_) return null;
     };
   };
 
@@ -74,7 +70,7 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  func putHelper<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, valueParam: V, DIR_PREV: Nat, DIR_NEXT: Nat): ?V {
+  func putHelper<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, valueParam: V, DPREV: Nat, DNEXT: Nat): ?V {
     let body = map.body;
 
     let hashParam = hashUtils.0(keyParam);
@@ -82,34 +78,30 @@ module {
     let bucketEntry = body.0[bucketIndex];
     var entry = bucketEntry;
 
-    loop switch (entry.1) {
-      case (?key) {
-        if (entry.3 == hashParam and hashUtils.1(key, keyParam)) {
-          let prevValue = entry.2[VALUE];
-
-          entry.2[VALUE] := valueParam;
-
-          return ?prevValue;
-        };
-
-        entry := entry.0[BUCKET_NEXT];
-      };
-
-      case (_) {
+    loop {
+      if (entry.3 == NULL_HASH) {
         let newSize = map.size +% 1;
-        let prevEntry = body.2.0[DIR_PREV];
+        let prevEntry = body.2.0[DPREV];
 
-        let newLinks = if (DIR_PREV == PREV) [var prevEntry, body.2, bucketEntry] else [var body.2, prevEntry, bucketEntry];
-        let newEntry: Entry<K, V> = (newLinks, ?keyParam, [var valueParam], hashParam);
+        let newLinks = if (DPREV == PREV) [var prevEntry, body.2, bucketEntry] else [var body.2, prevEntry, bucketEntry];
+        let newEntry = (newLinks, keyParam, [var valueParam], hashParam);
 
-        prevEntry.0[DIR_NEXT] := newEntry;
-        body.2.0[DIR_PREV] := newEntry;
+        prevEntry.0[DNEXT] := newEntry;
+        body.2.0[DPREV] := newEntry;
         body.0[bucketIndex] := newEntry;
         map.size := newSize;
 
         if (newSize == body.1) rehash(map);
 
         return null;
+      } else if (entry.3 == hashParam and hashUtils.1(entry.1, keyParam)) {
+        let prevValue = entry.2[VALUE];
+
+        entry.2[VALUE] := valueParam;
+
+        return ?prevValue;
+      } else {
+        entry := entry.0[BUCKET_NEXT];
       };
     };
   };
@@ -138,34 +130,28 @@ module {
     let hashParam = hashUtils.0(keyParam);
     let bucketIndex = nat(hashParam % body.1);
     var entry = body.0[bucketIndex];
-    var bucketPrevEntry = body.2;
+    var bucketPrev = body.2;
 
-    loop switch (entry.1) {
-      case (?key) {
-        if (entry.3 == hashParam and hashUtils.1(key, keyParam)) {
-          let size = map.size;
-          let prevEntry = entry.0[PREV];
-          let nextEntry = entry.0[NEXT];
+    loop {
+      if (entry.3 == hashParam and hashUtils.1(entry.1, keyParam)) {
+        let size = map.size;
+        let prevEntry = entry.0[PREV];
+        let nextEntry = entry.0[NEXT];
 
-          prevEntry.0[NEXT] := nextEntry;
-          nextEntry.0[PREV] := prevEntry;
-          map.size := size -% 1;
+        prevEntry.0[NEXT] := nextEntry;
+        nextEntry.0[PREV] := prevEntry;
+        map.size := size -% 1;
 
-          switch (bucketPrevEntry.1) {
-            case (null) body.0[bucketIndex] := entry.0[BUCKET_NEXT];
-            case (_) bucketPrevEntry.0[BUCKET_NEXT] := entry.0[BUCKET_NEXT];
-          };
+        if (bucketPrev.3 == NULL_HASH) body.0[bucketIndex] := entry.0[BUCKET_NEXT] else bucketPrev.0[BUCKET_NEXT] := entry.0[BUCKET_NEXT];
+        if (size == body.1 / 8) rehash(map);
 
-          if (size == body.1 / 8) rehash(map);
-
-          return ?entry.2[VALUE];
-        };
-
-        bucketPrevEntry := entry;
+        return ?entry.2[VALUE];
+      } else if (entry.3 == NULL_HASH) {
+        return null;
+      } else {
+        bucketPrev := entry;
         entry := entry.0[BUCKET_NEXT];
       };
-
-      case (_) return null;
     };
   };
 
@@ -175,7 +161,7 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  func updateHelper<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, getValue: (key: K, value: ?V) -> V, DIR_PREV: Nat, DIR_NEXT: Nat): V {
+  func updateHelper<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, fn: (K, ?V) -> V, DPREV: Nat, DNEXT: Nat): V {
     let body = map.body;
 
     let hashParam = hashUtils.0(keyParam);
@@ -183,80 +169,70 @@ module {
     let bucketEntry = body.0[bucketIndex];
     var entry = bucketEntry;
 
-    loop switch (entry.1) {
-      case (?key) {
-        if (entry.3 == hashParam and hashUtils.1(key, keyParam)) {
-          let newValue = getValue(keyParam, ?entry.2[VALUE]);
-
-          entry.2[VALUE] := newValue;
-
-          return newValue;
-        };
-
-        entry := entry.0[BUCKET_NEXT];
-      };
-
-      case (_) {
+    loop {
+      if (entry.3 == NULL_HASH) {
         let newSize = map.size +% 1;
-        let prevEntry = body.2.0[DIR_PREV];
+        let prevEntry = body.2.0[DPREV];
 
-        let newValue = getValue(keyParam, null);
-        let newLinks = if (DIR_PREV == PREV) [var prevEntry, body.2, bucketEntry] else [var body.2, prevEntry, bucketEntry];
-        let newEntry: Entry<K, V> = (newLinks, ?keyParam, [var newValue], hashParam);
+        let newValue = fn(keyParam, null);
+        let newLinks = if (DPREV == PREV) [var prevEntry, body.2, bucketEntry] else [var body.2, prevEntry, bucketEntry];
+        let newEntry = (newLinks, keyParam, [var newValue], hashParam);
 
-        prevEntry.0[DIR_NEXT] := newEntry;
-        body.2.0[DIR_PREV] := newEntry;
+        prevEntry.0[DNEXT] := newEntry;
+        body.2.0[DPREV] := newEntry;
         body.0[bucketIndex] := newEntry;
         map.size := newSize;
 
         if (newSize == body.1) rehash(map);
 
         return newValue;
+      } else if (entry.3 == hashParam and hashUtils.1(entry.1, keyParam)) {
+        let newValue = fn(keyParam, ?entry.2[VALUE]);
+
+        entry.2[VALUE] := newValue;
+
+        return newValue;
+      } else {
+        entry := entry.0[BUCKET_NEXT];
       };
     };
   };
 
-  public func update<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, getValue: (key: K, value: ?V) -> V): V {
+  public func update<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, getValue: (K, ?V) -> V): V {
     return updateHelper(map, hashUtils, keyParam, getValue, PREV, NEXT);
   };
 
-  public func updateFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, getValue: (key: K, value: ?V) -> V): V {
+  public func updateFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, getValue: (K, ?V) -> V): V {
     return updateHelper(map, hashUtils, keyParam, getValue, NEXT, PREV);
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  func popHelper<K, V>(map: Map<K, V>, DIR_PREV: Nat, DIR_NEXT: Nat): (?K, ?V) {
+  func popHelper<K, V>(map: Map<K, V>, DPREV: Nat, DNEXT: Nat): (?K, ?V) {
     let size = map.size;
 
     if (size == 0) return (null, null);
 
     let body = map.body;
 
-    let bucketIndex = nat(body.2.0[DIR_PREV].3 % body.1);
+    let bucketIndex = nat(body.2.0[DPREV].3 % body.1);
     var entry = body.0[bucketIndex];
-    var bucketPrevEntry = body.2;
+    var bucketPrev = body.2;
 
-    loop switch (entry.0[DIR_NEXT].1) {
-      case (null) {
-        let prevEntry = entry.0[DIR_PREV];
+    loop {
+      if (entry.0[DNEXT].3 == NULL_HASH) {
+        let prevEntry = entry.0[DPREV];
 
-        prevEntry.0[DIR_NEXT] := body.2;
-        body.2.0[DIR_PREV] := prevEntry;
+        prevEntry.0[DNEXT] := body.2;
+        body.2.0[DPREV] := prevEntry;
         map.size := size -% 1;
 
-        switch (bucketPrevEntry.1) {
-          case (null) body.0[bucketIndex] := entry.0[BUCKET_NEXT];
-          case (_) bucketPrevEntry.0[BUCKET_NEXT] := entry.0[BUCKET_NEXT];
-        };
-
+        if (bucketPrev.3 == NULL_HASH) body.0[bucketIndex] := entry.0[BUCKET_NEXT] else bucketPrev.0[BUCKET_NEXT] := entry.0[BUCKET_NEXT];
         if (size == body.1 / 8) rehash(map);
 
-        return (entry.1, ?entry.2[VALUE]);
-      };
-
-      case (_) {
-        bucketPrevEntry := entry;
+        return (?entry.1, ?entry.2[VALUE]);
+      } else {
+        bucketPrev := entry;
         entry := entry.0[BUCKET_NEXT];
       };
     };
@@ -275,59 +251,64 @@ module {
   public func peek<K, V>(map: Map<K, V>): (?K, ?V) {
     let entry = map.body.2.0[PREV];
 
-    return switch (entry.1) { case (?_) (entry.1, ?entry.2[VALUE]); case (_) (null, null) };
+    return if (entry.3 == NULL_HASH) (null, null) else (?entry.1, ?entry.2[VALUE]);
   };
 
   public func peekFront<K, V>(map: Map<K, V>): (?K, ?V) {
     let entry = map.body.2.0[NEXT];
 
-    return switch (entry.1) { case (?_) (entry.1, ?entry.2[VALUE]); case (_) (null, null) };
+    return if (entry.3 == NULL_HASH) (null, null) else (?entry.1, ?entry.2[VALUE]);
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func map<K, V1, V2>(map: Map<K, V1>, fn: (key: K, value: V1) -> V2): Map<K, V2> {
+  public func map<K, V1, V2>(map: Map<K, V1>, fn: (K, V1) -> V2): Map<K, V2> {
     let body = map.body;
-    let newEdgeEntry = new<K, V2>().body.2;
 
+    let newEdgeEntry = createEdgeEntry<K, V2>(body.2.1);
     let newBuckets = initArray<Entry<K, V2>>(nat(body.1), newEdgeEntry);
     var entry = body.2.0[NEXT];
     var prevEntry = newEdgeEntry;
 
-    loop switch (entry.1) {
-      case (?key) {
+    loop {
+      if (entry.3 == NULL_HASH) {
+        newEdgeEntry.0[PREV] := prevEntry;
+
+        return { var body = (newBuckets, body.1, newEdgeEntry); var size = map.size };
+      } else {
         let bucketIndex = nat(entry.3 % body.1);
 
-        let newEntry: Entry<K, V2> = ([var prevEntry, newEdgeEntry, newBuckets[bucketIndex]], entry.1, [var fn(key, entry.2[VALUE])], entry.3);
+        let newEntry = ([var prevEntry, newEdgeEntry, newBuckets[bucketIndex]], entry.1, [var fn(entry.1, entry.2[VALUE])], entry.3);
 
         prevEntry.0[NEXT] := newEntry;
         newBuckets[bucketIndex] := newEntry;
         prevEntry := newEntry;
         entry := entry.0[NEXT];
       };
-
-      case (_) {
-        newEdgeEntry.0[PREV] := prevEntry;
-
-        return { var body = (newBuckets, body.1, newEdgeEntry); var size = map.size };
-      };
     };
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func mapFilter<K, V1, V2>(map: Map<K, V1>, fn: (key: K, value: V1) -> ?V2): Map<K, V2> {
+  public func mapFilter<K, V1, V2>(map: Map<K, V1>, fn: (K, V1) -> ?V2): Map<K, V2> {
     let body = map.body;
-    let newEdgeEntry = new<K, V2>().body.2;
 
+    let newEdgeEntry = createEdgeEntry<K, V2>(body.2.1);
     var entry = body.2.0[NEXT];
     var prevEntry = newEdgeEntry;
     var newSize = 0:Nat32;
 
-    loop switch (entry.1) {
-      case (?key) switch (fn(key, entry.2[VALUE])) {
+    loop {
+      if (entry.3 == NULL_HASH) {
+        let newMap: Map<K, V2> = { var body = ([var], 0, newEdgeEntry); var size = newSize };
+
+        newEdgeEntry.0[PREV] := prevEntry;
+        rehash(newMap);
+
+        return newMap;
+      } else switch (fn(entry.1, entry.2[VALUE])) {
         case (?newValue) {
-          let newEntry: Entry<K, V2> = ([var prevEntry, newEdgeEntry, newEdgeEntry], entry.1, [var newValue], entry.3);
+          let newEntry = ([var prevEntry, newEdgeEntry, newEdgeEntry], entry.1, [var newValue], entry.3);
 
           prevEntry.0[NEXT] := newEntry;
           prevEntry := newEntry;
@@ -337,170 +318,169 @@ module {
 
         case (_) entry := entry.0[NEXT];
       };
-
-      case (_) {
-        let newMap: Map<K, V2> = { var body = ([var], 0, newEdgeEntry); var size = newSize };
-
-        newEdgeEntry.0[PREV] := prevEntry;
-        rehash(newMap);
-
-        return newMap;
-      };
     };
   };
 
-  public func filter<K, V>(map: Map<K, V>, fn: (key: K, value: V) -> Bool): Map<K, V> {
+  public func filter<K, V>(map: Map<K, V>, fn: (K, V) -> Bool): Map<K, V> {
     return mapFilter<K, V, V>(map, func(key, value) { if (fn(key, value)) ?value else null });
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  func iterateHelper<K, V, T>(map: Map<K, V>, DIR: Nat, fn: (key: K, value: [var V]) -> T): Iter.Iter<T> = object {
+  func iterateHelper<K, V, T>(map: Map<K, V>, fn: (K, [var V]) -> T, DNEXT: Nat): Iter.Iter<T> = object {
     var entry = map.body.2;
 
     public func next(): ?T {
-      entry := entry.0[DIR];
+      entry := entry.0[DNEXT];
 
-      return switch (entry.1) { case (?key) ?fn(key, entry.2); case (_) null };
+      return if (entry.3 == NULL_HASH) null else ?fn(entry.1, entry.2);
     };
   };
 
   public func keys<K, V>(map: Map<K, V>): Iter.Iter<K> {
-    return iterateHelper<K, V, K>(map, NEXT, func(key, value) { key });
+    return iterateHelper<K, V, K>(map, func(key, value) { key }, NEXT);
   };
 
   public func keysDesc<K, V>(map: Map<K, V>): Iter.Iter<K> {
-    return iterateHelper<K, V, K>(map, PREV, func(key, value) { key });
+    return iterateHelper<K, V, K>(map, func(key, value) { key }, PREV);
   };
 
   public func vals<K, V>(map: Map<K, V>): Iter.Iter<V> {
-    return iterateHelper<K, V, V>(map, NEXT, func(key, value) { value[VALUE] });
+    return iterateHelper<K, V, V>(map, func(key, value) { value[VALUE] }, NEXT);
   };
 
   public func valsDesc<K, V>(map: Map<K, V>): Iter.Iter<V> {
-    return iterateHelper<K, V, V>(map, PREV, func(key, value) { value[VALUE] });
+    return iterateHelper<K, V, V>(map, func(key, value) { value[VALUE] }, PREV);
   };
 
   public func entries<K, V>(map: Map<K, V>): Iter.Iter<(K, V)> {
-    return iterateHelper<K, V, (K, V)>(map, NEXT, func(key, value) { (key, value[VALUE]) });
+    return iterateHelper<K, V, (K, V)>(map, func(key, value) { (key, value[VALUE]) }, NEXT);
   };
 
   public func entriesDesc<K, V>(map: Map<K, V>): Iter.Iter<(K, V)> {
-    return iterateHelper<K, V, (K, V)>(map, PREV, func(key, value) { (key, value[VALUE]) });
+    return iterateHelper<K, V, (K, V)>(map, func(key, value) { (key, value[VALUE]) }, PREV);
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  func existHelper<K, V>(map: Map<K, V>, DIR: Nat, fn: (key: K, value: V) -> Bool): Bool {
+  func existHelper<K, V>(map: Map<K, V>, fn: (K, V) -> Bool, DNEXT: Nat): Bool {
     var entry = map.body.2;
 
     loop {
-      entry := entry.0[DIR];
+      entry := entry.0[DNEXT];
 
-      switch (entry.1) { case (?key) if (fn(key, entry.2[VALUE])) return true; case (_) return false };
+      if (entry.3 == NULL_HASH) return false else if (fn(entry.1, entry.2[VALUE])) return true;
     };
   };
 
-  public func forEach<K, V>(map: Map<K, V>, fn: (key: K, value: V) -> ()) {
-    ignore existHelper<K, V>(map, NEXT, func(key, value) { fn(key, value); false });
+  public func forEach<K, V>(map: Map<K, V>, fn: (K, V) -> ()) {
+    ignore existHelper<K, V>(map, func(key, value) { fn(key, value); false }, NEXT);
   };
 
-  public func forEachDesc<K, V>(map: Map<K, V>, fn: (key: K, value: V) -> ()) {
-    ignore existHelper<K, V>(map, PREV, func(key, value) { fn(key, value); false });
+  public func forEachDesc<K, V>(map: Map<K, V>, fn: (K, V) -> ()) {
+    ignore existHelper<K, V>(map, func(key, value) { fn(key, value); false }, PREV);
   };
 
-  public func some<K, V>(map: Map<K, V>, fn: (key: K, value: V) -> Bool): Bool {
-    return existHelper<K, V>(map, NEXT, fn);
+  public func some<K, V>(map: Map<K, V>, fn: (K, V) -> Bool): Bool {
+    return existHelper<K, V>(map, fn, NEXT);
   };
 
-  public func someDesc<K, V>(map: Map<K, V>, fn: (key: K, value: V) -> Bool): Bool {
-    return existHelper<K, V>(map, PREV, fn);
+  public func someDesc<K, V>(map: Map<K, V>, fn: (K, V) -> Bool): Bool {
+    return existHelper<K, V>(map, fn, PREV);
   };
 
-  public func every<K, V>(map: Map<K, V>, fn: (key: K, value: V) -> Bool): Bool {
-    return not existHelper<K, V>(map, NEXT, func(key, value) { not fn(key, value) });
+  public func every<K, V>(map: Map<K, V>, fn: (K, V) -> Bool): Bool {
+    return not existHelper<K, V>(map, func(key, value) { not fn(key, value) }, NEXT);
   };
 
-  public func everyDesc<K, V>(map: Map<K, V>, fn: (key: K, value: V) -> Bool): Bool {
-    return not existHelper<K, V>(map, PREV, func(key, value) { not fn(key, value) });
+  public func everyDesc<K, V>(map: Map<K, V>, fn: (K, V) -> Bool): Bool {
+    return not existHelper<K, V>(map, func(key, value) { not fn(key, value) }, PREV);
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  func findHelper<K, V>(map: Map<K, V>, DIR: Nat, fn: (key: K, value: V) -> Bool): (?K, ?V) {
-    var entry = map.body.2.0[DIR];
+  public func find<K, V>(map: Map<K, V>, fn: (K, V) -> Bool): (?K, ?V) {
+    var entry = map.body.2;
 
-    loop switch (entry.1) {
-      case (?key) {
+    loop {
+      entry := entry.0[NEXT];
+
+      if (entry.3 == NULL_HASH) return (null, null) else {
         let valueBody = entry.2[VALUE];
 
-        if (fn(key, valueBody)) return (entry.1, ?valueBody);
-
-        entry := entry.0[DIR];
+        if (fn(entry.1, valueBody)) return (?entry.1, ?valueBody);
       };
-
-      case (_) return (null, null);
     };
   };
 
-  public func find<K, V>(map: Map<K, V>, fn: (key: K, value: V) -> Bool): (?K, ?V) {
-    return findHelper<K, V>(map, NEXT, fn);
-  };
+  public func findDesc<K, V>(map: Map<K, V>, fn: (K, V) -> Bool): (?K, ?V) {
+    var entry = map.body.2;
 
-  public func findDesc<K, V>(map: Map<K, V>, fn: (key: K, value: V) -> Bool): (?K, ?V) {
-    return findHelper<K, V>(map, PREV, fn);
+    loop {
+      entry := entry.0[PREV];
+
+      if (entry.3 == NULL_HASH) return (null, null) else {
+        let valueBody = entry.2[VALUE];
+
+        if (fn(entry.1, valueBody)) return (?entry.1, ?valueBody);
+      };
+    };
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func fromIter<K, V>(iter: Iter.Iter<(K, V)>, hashUtils: HashUtils<K>): Map<K, V> {
-    let newMap = new<K, V>();
+    let newMap = new<K, V>(hashUtils);
 
     for (entry in iter) set(newMap, hashUtils, entry.0, entry.1);
 
     return newMap;
   };
 
-  public func toArray<K, V, T>(map: Map<K, V>, fn: (key: K, value: V) -> ?T): [T] {
+  public func toArray<K, V, T>(map: Map<K, V>, fn: (K, V) -> ?T): [T] {
+    let array = initArray<?T>(nat(map.size), null);
     var entry = map.body.2.0[NEXT];
     var arraySize = 0:Nat32;
 
-    let array = tabulateArray<?T>(nat(map.size), func(_) {
-      loop switch (entry.1) {
-        case (?key) switch (fn(key, entry.2[VALUE])) {
-          case (null) entry := entry.0[NEXT];
+    loop {
+      if (entry.3 == NULL_HASH) {
+        return tabulateArray<T>(nat(arraySize), func(i) {
+          switch (array[i]) { case (?item) item; case (_) trap("unreachable") };
+        });
+      } else switch (fn(entry.1, entry.2[VALUE])) {
+        case (null) entry := entry.0[NEXT];
 
-          case (newValue) {
-            entry := entry.0[NEXT];
-            arraySize +%= 1;
-
-            return newValue;
-          };
+        case (newValue) {
+          array[nat(arraySize)] := newValue;
+          entry := entry.0[NEXT];
+          arraySize +%= 1;
         };
-
-        case (_) return null;
       };
-    });
-
-    return tabulateArray<T>(nat(arraySize), func(i) {
-      return switch (array[i]) { case (?item) item; case (_) trap("unreachable") }
-    });
+    };
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func new<K, V>(): Map<K, V> {
-    let nullEntry: Entry<K, V> = ([var], null, [var], 0);
-    let newEdgeEntry: Entry<K, V> = ([var nullEntry, nullEntry, nullEntry], null, [var], 0);
+  func createEdgeEntry<K, V>(nullKey: K): Entry<K, V> {
+    let nullEntry: Entry<K, V> = ([var], nullKey, [var], NULL_HASH);
+    let newEdgeEntry: Entry<K, V> = ([var nullEntry, nullEntry], nullKey, [var], NULL_HASH);
 
     newEdgeEntry.0[PREV] := newEdgeEntry;
     newEdgeEntry.0[NEXT] := newEdgeEntry;
+
+    return newEdgeEntry;
+  };
+
+  public func new<K, V>(hashUtils: HashUtils<K>): Map<K, V> {
+    let newEdgeEntry = createEdgeEntry<K, V>(hashUtils.2());
 
     return { var body = ([var newEdgeEntry, newEdgeEntry], 2, newEdgeEntry); var size = 0 };
   };
 
   public func clear<K, V>(map: Map<K, V>) {
-    map.body := new<K, V>().body;
+    let newEdgeEntry = createEdgeEntry<K, V>(map.body.2.1);
+
+    map.body := ([var newEdgeEntry, newEdgeEntry], 2, newEdgeEntry);
     map.size := 0;
   };
 

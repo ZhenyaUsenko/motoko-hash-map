@@ -1,9 +1,11 @@
+import Blob "mo:base/Principal";
 import Prim "mo:prim";
 
 module {
   public type HashUtils<K> = (
-    getHash: (key: K) -> Nat32,
-    areEqual: (a: K, b: K) -> Bool,
+    getHash: (K) -> Nat32,
+    areEqual: (K, K) -> Bool,
+    getNullKey: () -> K,
   );
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -35,27 +37,27 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public let ihash: HashUtils<Int> = (hashInt, func(a, b) { a == b });
+  public let ihash: HashUtils<Int> = (hashInt, func(a, b) { a == b }, func() { 0 });
 
-  public let nhash: HashUtils<Nat> = (hashInt, func(a, b) { a == b });
+  public let nhash: HashUtils<Nat> = (hashInt, func(a, b) { a == b }, func() { 0 });
 
-  public let thash: HashUtils<Text> = (hashText, func(a, b) { Prim.encodeUtf8(a) == Prim.encodeUtf8(b) });
+  public let thash: HashUtils<Text> = (hashText, func(a, b) { Prim.encodeUtf8(a) == Prim.encodeUtf8(b) }, func() { "" });
 
-  public let phash: HashUtils<Principal> = (hashPrincipal, func(a, b) { a == b });
+  public let phash: HashUtils<Principal> = (hashPrincipal, func(a, b) { a == b }, func() { Prim.principalOfBlob("") });
 
-  public let bhash: HashUtils<Blob> = (hashBlob, func(a, b) { a == b });
+  public let bhash: HashUtils<Blob> = (hashBlob, func(a, b) { a == b }, func() { "" });
 
-  public let lhash: HashUtils<Bool> = (hashBool, func(a, b) { true });
+  public let lhash: HashUtils<Bool> = (hashBool, func(a, b) { true }, func() { false });
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func useHash<K>((getHash, areEqual): HashUtils<K>, hash: Nat32): HashUtils<K> {
-    return (func(key) { hash }, areEqual);
+  public func useHash<K>((getHash, areEqual, getNullKey): HashUtils<K>, hash: Nat32): HashUtils<K> {
+    return (func(key) { hash }, areEqual, getNullKey);
   };
 
-  public func calcHash<K>((getHash, areEqual): HashUtils<K>, key: K): HashUtils<K> {
+  public func calcHash<K>((getHash, areEqual, getNullKey): HashUtils<K>, key: K): HashUtils<K> {
     let hash = getHash(key);
 
-    return (func(key) { hash }, areEqual);
+    return (func(key) { hash }, areEqual, getNullKey);
   };
 };

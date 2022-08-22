@@ -1,20 +1,19 @@
-import Set "./Set";
-import OptimizedSet "./Set";
+import Set "./optimized";
 
 module {
-  public type Entry<K> = OptimizedSet.Entry<K>;
+  public type Entry<K> = Set.Entry<K>;
 
-  public type Set<K> = OptimizedSet.Set<K>;
+  public type Set<K> = Set.Set<K>;
 
-  public type HashUtils<K> = OptimizedSet.HashUtils<K>;
+  public type HashUtils<K> = Set.HashUtils<K>;
 
-  public let { ihash; nhash; thash; phash; bhash; lhash; useHash; calcHash } = OptimizedSet;
+  public let { ihash; nhash; thash; phash; bhash; lhash; useHash; calcHash } = Set;
 
-  public let { has; put; putFront; add; addFront; remove; delete; pop; popFront; peek; peekFront } = OptimizedSet;
+  public let { has; put; putFront; add; addFront; remove; delete; pop; popFront; peek; peekFront } = Set;
 
-  public let { filter; keys; keysDesc } = OptimizedSet;
+  public let { filter; keys; keysDesc } = Set;
 
-  public let { forEach; forEachDesc; some; someDesc; every; everyDesc; find; findDesc } = OptimizedSet;
+  public let { forEach; forEachDesc; some; someDesc; every; everyDesc; find; findDesc } = Set;
 
-  public let { fromIter; toArray; rehash; new; clear; size } = OptimizedSet;
+  public let { fromIter; toArray; rehash; new; clear; size } = Set;
 };
