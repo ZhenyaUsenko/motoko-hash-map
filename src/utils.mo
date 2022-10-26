@@ -41,7 +41,7 @@ module {
 
   public let nhash: HashUtils<Nat> = (hashInt, func(a, b) { a == b }, func() { 0 });
 
-  public let thash: HashUtils<Text> = (hashText, func(a, b) { Prim.encodeUtf8(a) == Prim.encodeUtf8(b) }, func() { "" });
+  public let thash: HashUtils<Text> = (hashText, func(a, b) { a == b }, func() { "" });
 
   public let phash: HashUtils<Principal> = (hashPrincipal, func(a, b) { a == b }, func() { Prim.principalOfBlob("") });
 

@@ -11,9 +11,9 @@ module {
 
   public let { get; has; put; putFront; set; setFront; update; updateFront; remove; delete; pop; popFront; peek; peekFront } = Map;
 
-  public let { map; mapFilter; filter; keys; keysDesc; vals; valsDesc; entries; entriesDesc } = Map;
+  public let { mapFilter; map; filter; clone; keys; keysDesc; vals; valsDesc; entries; entriesDesc } = Map;
 
-  public let { forEach; forEachDesc; some; someDesc; every; everyDesc; find; findDesc } = Map;
+  public let { forEach; forEachDesc; every; everyDesc; some; someDesc; find; findDesc } = Map;
 
-  public let { fromIter; toArray; rehash; new; clear; size } = Map;
+  public let { fromIter; toArray; new; clear; size } = Map;
 };

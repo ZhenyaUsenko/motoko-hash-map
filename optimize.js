@@ -59,35 +59,188 @@ for (let [struct, type, path] of structs) {
 
   let optimizedStruct = struct
 
+  optimizedStruct = optimizedStruct.replace(/}\s*;?\s*$/, `\n  ${'/'.repeat(148)}\n\n${utilsMethods}\n};\n`)
+
+  optimizedStruct = optimizedStruct.replace(/ *public\s+type\s+HashUtils.+/, `${utilsTypes};`)
+
+  optimizedStruct = optimizedStruct.replace(/ *import\s+Utils.+;\s*?\n/, '')
+
+  optimizedStruct = optimizedStruct.replace(/ *public\s+let\s*{[^}]+}\s*=\s*Utils\s*;\s*\n/, '')
+
+  let structWithUtils = optimizedStruct
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  let getMethod, putHelper, removeMethod, updateHelper, popHelper, iterateHelper, forEachHelper
+
   let methodRegExp = /func\s+(\w+)/g
 
-  while ((match = methodRegExp.exec(struct)) != null) {
+  while ((match = methodRegExp.exec(structWithUtils)) != null) {
     let { 1: methodName, index: methodIndex } = match
 
     if (methodName === 'next') continue
 
-    let methodBody = getBody(struct, methodIndex)
+    let methodBody = getBody(structWithUtils, methodIndex)
+    let methodBodyOnly = getBody(structWithUtils, methodIndex, { bodyOnly: true })
 
     let newMethodBody = methodBody
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    let entryMatch = methodBody.match(/( *)let\s*\([^)]+\)\s*=\s*((?:entry|edgeEntry)[^;]*);(\s*\n)/)
+    if (methodName === 'unwrap') {
+      optimizedStruct = optimizedStruct.replace(methodBody, '')
 
-    if (entryMatch != null) {
-      let { 0: entryString, 1: spaceBefore, 2: entryExp, 3: spaceAfter, index: entryIndex } = entryMatch
+      continue
+    }
 
-      let entryBody = getBody(methodBody, entryIndex, { bodyStarted: true })
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-      let newEntryBody = entryBody
+    if (methodName === 'get') {
+      getMethod = methodBodyOnly
+    }
 
-      let entryVarNames = type === 'map' ? { links: 0, key: 1, value: 2, hash: 3 } : { links: 0, key: 1, hash: 2 }
+    if (methodName === 'has' && type === 'map') {
+      newMethodBody = newMethodBody.replace(methodBodyOnly, getMethod)
 
-      newEntryBody = newEntryBody.replace(entryString, entryExp.trim() == 'entry' ? '' : `${spaceBefore}let entry = ${entryExp};${spaceAfter}`)
+      newMethodBody = newMethodBody.replace(/(return\s*)(null|value)/g, (item) => `return ${item.endsWith('value') ? 'true' : 'false'}`)
+    }
 
-      newEntryBody = newEntryBody.replace(/\b(links|key|value|hash)\b/g, (name) => `entry.${entryVarNames[name]}`)
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-      newMethodBody = newMethodBody.replace(entryBody, newEntryBody)
+    if (methodName === 'putHelper') {
+      putHelper = methodBodyOnly
+
+      optimizedStruct = optimizedStruct.replace(methodBody, '')
+
+      continue
+    }
+
+    if (methodName === 'updateHelper') {
+      updateHelper = methodBodyOnly
+
+      optimizedStruct = optimizedStruct.replace(methodBody, '')
+
+      continue
+    }
+
+    if (['put', 'putFront', 'set', 'setFront', 'update', 'updateFront'].includes(methodName)) {
+      let isFront = methodName.endsWith('Front')
+      let isSet = methodName.startsWith('set')
+      let isUpdate = methodName.startsWith('update')
+
+      newMethodBody = newMethodBody.replace(methodBodyOnly, isUpdate ? updateHelper : putHelper)
+
+      newMethodBody = newMethodBody.replace(/newEntry.*:=\s*deqPrev\s*;\s*/, '')
+
+      newMethodBody = newMethodBody.replace(/edgeEntry\s*,\s*edgeEntry\s*]/, () => isFront ? 'edgeEntry, deqPrev]' : 'deqPrev, edgeEntry]')
+
+      if (isSet) {
+        newMethodBody = newMethodBody.replace(/(return\s*)(null|value)/g, 'return')
+      }
+
+      if (isFront) {
+        newMethodBody = newMethodBody.replace(/(DEQ_PREV|DEQ_NEXT)/g, (item) => item === 'DEQ_PREV' ? 'DEQ_NEXT' : 'DEQ_PREV')
+
+        newMethodBody = newMethodBody.replace(/deqPrev/g, 'deqNext')
+      }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    if (methodName === 'remove') {
+      removeMethod = methodBodyOnly
+    }
+
+    if (methodName === 'delete') {
+      newMethodBody = newMethodBody.replace(methodBodyOnly, removeMethod)
+
+      newMethodBody = newMethodBody.replace(/(return\s*)(null|value)/g, 'return')
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    if (methodName === 'popHelper') {
+      popHelper = methodBodyOnly
+
+      optimizedStruct = optimizedStruct.replace(methodBody, '')
+
+      continue
+    }
+
+    if (['pop', 'popFront'].includes(methodName)) {
+      let isFront = methodName.endsWith('Front')
+
+      newMethodBody = newMethodBody.replace(methodBodyOnly, popHelper)
+
+      if (isFront) {
+        newMethodBody = newMethodBody.replace(/(DEQ_PREV|DEQ_NEXT)/g, (item) => item === 'DEQ_PREV' ? 'DEQ_NEXT' : 'DEQ_PREV')
+
+        newMethodBody = newMethodBody.replace(/deqPrev/g, 'deqNext')
+      }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    if (methodName === 'iterateHelper') {
+      iterateHelper = ` = object${methodBodyOnly}`
+
+      optimizedStruct = optimizedStruct.replace(methodBody, '')
+
+      continue
+    }
+
+    if (['keys', 'keysDesc', 'vals', 'valsDesc', 'entries', 'entriesDesc'].includes(methodName)) {
+      let isDesc = methodName.endsWith('Desc')
+      let isKeys = methodName.startsWith('keys')
+      let isVals = methodName.startsWith('vals')
+
+      newMethodBody = newMethodBody.replace(methodBodyOnly, iterateHelper)
+
+      newMethodBody = newMethodBody.replace(/fn\s*\(\s*key\s*,\s*value\s*\)/, () => isKeys ? '?key' : isVals ? 'value' : '?(key, unwrap(value))')
+
+      newMethodBody = newMethodBody.replace(/\?T/, () => isKeys ? '?K' : isVals ? '?V' : '?(K, V)')
+
+      newMethodBody = newMethodBody.replace(/return\s+/, '')
+
+      if (isDesc) {
+        newMethodBody = newMethodBody.replace(/(DEQ_PREV|DEQ_NEXT)/g, (item) => item === 'DEQ_PREV' ? 'DEQ_NEXT' : 'DEQ_PREV')
+      }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    if (methodName === 'forEachHelper') {
+      forEachHelper = methodBodyOnly
+
+      optimizedStruct = optimizedStruct.replace(methodBody, '')
+
+      continue
+    }
+
+    if (['forEach', 'forEachDesc', 'some', 'someDesc', 'every', 'everyDesc'].includes(methodName)) {
+      let isDesc = methodName.endsWith('Desc')
+      let isForEach = methodName.startsWith('forEach')
+      let isEvery = methodName.startsWith('every')
+
+      newMethodBody = newMethodBody.replace(methodBodyOnly, forEachHelper)
+
+      newMethodBody = newMethodBody.replace(/( *)(.*) else/g, '$1$2\n$1else')
+
+      if (isForEach) {
+        newMethodBody = newMethodBody.replace(/if\s*\(\s*fn.*;/, 'fn(key, unwrap(value))')
+
+        newMethodBody = newMethodBody.replace(/return\s*false/, 'return')
+      }
+
+      if (isEvery) {
+        newMethodBody = newMethodBody.replace(/if\s*\(\s*fn/, 'if (not fn')
+
+        newMethodBody = newMethodBody.replace(/(return\s*)(true|false)/g, (item) => `return ${item.endsWith('false') ? 'true' : 'false'}`)
+      }
+
+      if (isDesc) {
+        newMethodBody = newMethodBody.replace(/(DEQ_PREV|DEQ_NEXT)/g, (item) => item === 'DEQ_PREV' ? 'DEQ_NEXT' : 'DEQ_PREV')
+      }
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -100,28 +253,84 @@ for (let [struct, type, path] of structs) {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    let bodyVarNames = { buckets: 0, capacity: 1, edgeEntry: 2 }
+    if (['find', 'findDesc', 'toArray'].includes(methodName)) {
+      newMethodBody = newMethodBody.replace(/( *)(.*) else/g, '$1$2\n$1else')
+
+      if (methodName === 'toArray') {
+        newMethodBody = newMethodBody.replace(/( *)(.*) return/g, '$1$2\n$1return')
+      }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    let entryMatch = newMethodBody.match(/( *)let\s*\([^)]+\)\s*=\s*((?:entry|edgeEntry)[^;]*);(\s*\n)/)
+
+    if (entryMatch != null) {
+      let { 0: entryString, 1: spaceBefore, 2: entryExp, 3: spaceAfter, index: entryIndex } = entryMatch
+
+      let entryBody = getBody(newMethodBody, entryIndex, { bodyStarted: true })
+
+      let newEntryBody = entryBody
+
+      let entryVarNames = type === 'map' ? { key: 0, value: 1, hash: 2, links: 3 } : { key: 0, hash: 1, links: 2 }
+
+      newEntryBody = newEntryBody.replace(entryString, entryExp.trim() == 'entry' ? '' : `${spaceBefore}let entry = ${entryExp};${spaceAfter}`)
+
+      newEntryBody = newEntryBody.replace(/\b(links|key|value|hash)\b/g, (name) => `entry.${entryVarNames[name]}`)
+
+      newMethodBody = newMethodBody.replace(entryBody, newEntryBody)
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    let bodyVarNames = { edgeEntry: 0, size: 1 }
 
     let hashUtilVarNames = { getHash: 0, areEqual: 1, getNullKey: 2 }
 
-    newMethodBody = newMethodBody.replace(/let\s*\(\s*_\s*,\s*_\s*,\s*newEdgeEntry\s*\)\s*=\s*new([^;]+)/g, 'let newEdgeEntry = new$1.2')
+    let unwrapBody = '{ case (?value) value; case (_) trap("unreachable") }'
 
-    newMethodBody = newMethodBody.replace(/let\s*\([^)]+\)\s*=\s*(map|set)\s*\.\s*body/g, `let body = ${type}.body`)
+    let branchReplaceBody = ''
 
-    newMethodBody = newMethodBody.replace(/\b(buckets|capacity|edgeEntry)\b(?! limit reached)/g, (name) => `body.${bodyVarNames[name]}`)
+    let linkReplaceBody = ''
 
-    if (/let\s+body/.test(newMethodBody) && newMethodBody.match(/[^\.\s]\s*\bbody\b/g).length == 2) {
-      newMethodBody = newMethodBody.replace(/ *let body = (map|set)\.body\s*;\s*\n/, '')
-
-      newMethodBody = newMethodBody.replace(/([^\.\s]\s*)\bbody\b/g, `$1${type}.body`)
+    for (let i = 1; i <= 4; i++) {
+      branchReplaceBody = `${branchReplaceBody}$1leaf.3[BRANCH_${i}] := entry.3[BRANCH_${i}];`
     }
+
+    for (let i = 1; i <= 6; i++) {
+      linkReplaceBody = `${linkReplaceBody}$1$2.3[${i === 5 ? 'DEQ_PREV' : i === 6 ? 'DEQ_NEXT' : `BRANCH_${i}`}] := $2;`
+    }
+
+    newMethodBody = newMethodBody.replace(/(\n *)for\s*\(\s*index\s+in\s+leaf.*/, branchReplaceBody)
+
+    newMethodBody = newMethodBody.replace(/(\n *)for\s*\(\s*index\s+in\s+(edgeEntry).*/, linkReplaceBody)
+
+    newMethodBody = newMethodBody.replace(/(\n *)for\s*\(\s*index\s+in\s+(newEdgeEntry).*/, linkReplaceBody)
+
+    newMethodBody = newMethodBody.replace(/let\s*\([^)]+\)\s*=\s*(map|set)\s*;\s*/, '')
+
+    newMethodBody = newMethodBody.replace(/\b(edgeEntry|size)\b(?!\s*<)/g, (name) => `${type}.${bodyVarNames[name]}`)
 
     newMethodBody = newMethodBody.replace(/\(\s*(getHash|_)\s*,\s*(areEqual|_)\s*,\s*(getNullKey|_)\s*\)/g, 'hashUtils')
 
     newMethodBody = newMethodBody.replace(/\b(getHash|areEqual|getNullKey)\b/g, (name) => `hashUtils.${hashUtilVarNames[name]}`)
 
+    newMethodBody = newMethodBody.replace(/unwrap\([^)]+\)/g, (value) => `switch (${value.slice(7, -1)}) ${unwrapBody}`)
+
+    newMethodBody = newMethodBody.replace(/return\s+(.+\n *})$/, '$1')
+
     optimizedStruct = optimizedStruct.replace(methodBody, newMethodBody)
   }
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  optimizedStruct = optimizedStruct.replace(/\s+;/g, ';')
+
+  optimizedStruct = optimizedStruct.replace(/\/\/;+/g, '//')
+
+  optimizedStruct = optimizedStruct.replace(/;{2,}/g, ';')
+
+  optimizedStruct = optimizedStruct.replace(/\n{4,}/g, '\n\n\n')
 
   fs.writeFileSync(path, optimizedStruct)
 }

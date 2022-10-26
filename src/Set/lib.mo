@@ -13,7 +13,7 @@ module {
 
   public let { filter; keys; keysDesc } = Set;
 
-  public let { forEach; forEachDesc; some; someDesc; every; everyDesc; find; findDesc } = Set;
+  public let { forEach; forEachDesc; every; everyDesc; some; someDesc; find; findDesc } = Set;
 
-  public let { fromIter; toArray; rehash; new; clear; size } = Set;
+  public let { fromIter; toArray; new; clear; size } = Set;
 };

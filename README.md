@@ -1,6 +1,6 @@
 # Hash Map
 
-Stable hash maps for Motoko based on "deterministic hash map" algorithm by Tyler Close
+Stable hash maps for Motoko
 
 ```ts
 import Iter "mo:base/Iter";

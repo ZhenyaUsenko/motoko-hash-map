@@ -24,6 +24,8 @@ module {
 
   let { Array_tabulate = tabulateArray; Array_init = initArray; nat32ToNat = nat; clzNat32 = clz; trap } = Prim;
 
+  func unwrap<T>(value: ?T): T { switch (value) { case (?value) value; case (_) trap("unreachable") } };
+
   let PREV = 0; let NEXT = 1; let BUCKET_NEXT = 2;
 
   let NULL_HASH = 0xffffffff:Nat32;
