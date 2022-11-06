@@ -1204,15 +1204,109 @@ module {
   };
 
   public func map<K, V1, V2>(map: Map<K, V1>, fn: (K, V1) -> V2): Map<K, V2> {
-    mapFilter<K, V1, V2>(map, func(key, value) = ?fn(key, value));
+    let newEdgeEntry = createEdgeEntry<K, V2>(map.0.0);
+    var entry = map.0.3[DEQ_NEXT];
+    var deqPrev = newEdgeEntry;
+    var newSize = 0:Nat32;
+
+    loop {
+      if (entry.2 == NULL_HASH) {
+        newEdgeEntry.3[DEQ_PREV] := deqPrev;
+
+        return (newEdgeEntry, [var newSize]);
+      } else {
+        var shiftingHash = entry.2;
+        var searchEntry = newEdgeEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        var parentEntry = newEdgeEntry;
+
+        while (searchEntry.2 != NULL_HASH) {
+          parentEntry := searchEntry;
+          shiftingHash >>= HASH_OFFSET;
+          searchEntry := searchEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        };
+
+        let newEntry = (
+          entry.0,
+          ?fn(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") }),
+          entry.2,
+          [var newEdgeEntry, newEdgeEntry, newEdgeEntry, newEdgeEntry, deqPrev, newEdgeEntry],
+        );
+
+        deqPrev.3[DEQ_NEXT] := newEntry;
+        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+        deqPrev := newEntry;
+        entry := entry.3[DEQ_NEXT];
+        newSize +%= 1;
+      };
+    };
   };
 
   public func filter<K, V>(map: Map<K, V>, fn: (K, V) -> Bool): Map<K, V> {
-    mapFilter<K, V, V>(map, func(key, value) = if (fn(key, value)) ?value else null);
+    let newEdgeEntry = createEdgeEntry<K, V>(map.0.0);
+    var entry = map.0.3[DEQ_NEXT];
+    var deqPrev = newEdgeEntry;
+    var newSize = 0:Nat32;
+
+    loop {
+      if (entry.2 == NULL_HASH) {
+        newEdgeEntry.3[DEQ_PREV] := deqPrev;
+
+        return (newEdgeEntry, [var newSize]);
+      } else if (fn(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") })) {
+        var shiftingHash = entry.2;
+        var searchEntry = newEdgeEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        var parentEntry = newEdgeEntry;
+
+        while (searchEntry.2 != NULL_HASH) {
+          parentEntry := searchEntry;
+          shiftingHash >>= HASH_OFFSET;
+          searchEntry := searchEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        };
+
+        let newEntry = (entry.0, entry.1, entry.2, [var newEdgeEntry, newEdgeEntry, newEdgeEntry, newEdgeEntry, deqPrev, newEdgeEntry]);
+
+        deqPrev.3[DEQ_NEXT] := newEntry;
+        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+        deqPrev := newEntry;
+        entry := entry.3[DEQ_NEXT];
+        newSize +%= 1;
+      } else {
+        entry := entry.3[DEQ_NEXT];
+      };
+    };
   };
 
   public func clone<K, V>(map: Map<K, V>): Map<K, V> {
-    mapFilter<K, V, V>(map, func(key, value) = ?value);
+    let newEdgeEntry = createEdgeEntry<K, V>(map.0.0);
+    var entry = map.0.3[DEQ_NEXT];
+    var deqPrev = newEdgeEntry;
+    var newSize = 0:Nat32;
+
+    loop {
+      if (entry.2 == NULL_HASH) {
+        newEdgeEntry.3[DEQ_PREV] := deqPrev;
+
+        return (newEdgeEntry, [var newSize]);
+      } else {
+        var shiftingHash = entry.2;
+        var searchEntry = newEdgeEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        var parentEntry = newEdgeEntry;
+
+        while (searchEntry.2 != NULL_HASH) {
+          parentEntry := searchEntry;
+          shiftingHash >>= HASH_OFFSET;
+          searchEntry := searchEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        };
+
+        let newEntry = (entry.0, entry.1, entry.2, [var newEdgeEntry, newEdgeEntry, newEdgeEntry, newEdgeEntry, deqPrev, newEdgeEntry]);
+
+        deqPrev.3[DEQ_NEXT] := newEntry;
+        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+        deqPrev := newEntry;
+        entry := entry.3[DEQ_NEXT];
+        newSize +%= 1;
+      };
+    };
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

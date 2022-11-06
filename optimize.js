@@ -69,7 +69,9 @@ for (let [struct, type, path] of structs) {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  let getMethod, putHelper, putBeforeHelper, updateHelper, removeMethod, popHelper, cycleHelper, iterateHelper, iterateFromHelper, toArrayMapHelper
+  let getMethod, putHelper, putBeforeHelper, updateHelper, removeMethod, popHelper, cycleHelper
+
+  let mapFilterMethod, filterMethod, iterateHelper, iterateFromHelper, toArrayMapHelper
 
   let match = null
 
@@ -240,6 +242,66 @@ for (let [struct, type, path] of structs) {
 
         newMethodBody = newMethodBody.replace(/(deqFirst|deqLast)/g, (item) => item === 'deqFirst' ? 'deqLast' : 'deqFirst')
       }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    if (methodName === 'mapFilter') {
+      mapFilterMethod = methodBodyOnly
+    }
+
+    if (/^(map|filter|clone)$/.test(methodName) && type === 'map') {
+      newMethodBody = newMethodBody.replace(methodBodyOnly, methodName === 'map' ? mapFilterMethod : mapFilterMethod.replace(/\bV2\b/, 'V'))
+
+      let switchMatch = newMethodBody.match(/switch\s*\(\s*fn/)
+      let caseMatch = newMethodBody.match(/( +)case\s*\(\s*newValue\s*\)/)
+
+      if (switchMatch != null && caseMatch != null) {
+        let { 1: indent } = caseMatch
+
+        let indent2 = `${indent}  `
+        let indent4 = `${indent}    `
+
+        let switchBody = getBody(newMethodBody, switchMatch.index)
+        let caseBody = getBody(newMethodBody, caseMatch.index, { bodyOnly: true })
+
+        if (methodName === 'clone') {
+          caseBody = `{${caseBody.replace('newValue', 'value')}}`
+
+          newMethodBody = newMethodBody.replace(switchBody, `${caseBody.replace(/ {4,}/g, space => ' '.repeat(space.length - 2))}`)
+        } else if (methodName === 'map') {
+          let newEntryReplace = `let newEntry = (\n${indent4}$1,\n${indent4}?fn(key, unwrap(value)),\n${indent4}$2,\n${indent4}$3,\n${indent2})`
+
+          caseBody = `{${caseBody.replace(/let\s+newEntry\s*=\s*\(([^,]+),\s*[^,]+,\s*([^,]+),\s*(.+)\)/, newEntryReplace)}}`
+
+          newMethodBody = newMethodBody.replace(switchBody, `${caseBody.replace(/ {4,}/g, space => ' '.repeat(space.length - 2))}`)
+        } else {
+          caseBody = `if (fn(key, unwrap(value))) {${caseBody.replace('newValue', 'value')}}`
+          caseBody = `${caseBody} else {\n${indent2}entry := links[DEQ_NEXT];\n${indent}}`
+
+          newMethodBody = newMethodBody.replace(switchBody, `${caseBody.replace(/ {4,}/g, space => ' '.repeat(space.length - 2))}`)
+        }
+      }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    if (methodName === 'filter' && type === 'set') {
+      filterMethod = methodBodyOnly
+    }
+
+    if (methodName === 'clone' && type === 'set') {
+      newMethodBody = newMethodBody.replace(methodBodyOnly, filterMethod)
+
+      let elseMatch = newMethodBody.match(/else\s*{/)
+
+      if (elseMatch != null) {
+        let elseBody = getBody(newMethodBody, elseMatch.index)
+
+        newMethodBody = newMethodBody.replace(elseBody, '')
+      }
+
+      newMethodBody = newMethodBody.replace(/if\s*\(\s*fn\s*\(\s*key\s*\)\s*\)\s*/, '')
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

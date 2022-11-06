@@ -949,7 +949,36 @@ module {
   };
 
   public func clone<K>(map: Set<K>): Set<K> {
-    filter<K>(map, func(key) = true);
+    let newEdgeEntry = createEdgeEntry<K>(map.0.0);
+    var entry = map.0.2[DEQ_NEXT];
+    var deqPrev = newEdgeEntry;
+    var newSize = 0:Nat32;
+
+    loop {
+      if (entry.1 == NULL_HASH) {
+        newEdgeEntry.2[DEQ_PREV] := deqPrev;
+
+        return (newEdgeEntry, [var newSize]);
+      } else {
+        var shiftingHash = entry.1;
+        var searchEntry = newEdgeEntry.2[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        var parentEntry = newEdgeEntry;
+
+        while (searchEntry.1 != NULL_HASH) {
+          parentEntry := searchEntry;
+          shiftingHash >>= HASH_OFFSET;
+          searchEntry := searchEntry.2[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        };
+
+        let newEntry = (entry.0, entry.1, [var newEdgeEntry, newEdgeEntry, newEdgeEntry, newEdgeEntry, deqPrev, newEdgeEntry]);
+
+        deqPrev.2[DEQ_NEXT] := newEntry;
+        parentEntry.2[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+        deqPrev := newEntry;
+        entry := entry.2[DEQ_NEXT];
+        newSize +%= 1;
+      };
+    };
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
