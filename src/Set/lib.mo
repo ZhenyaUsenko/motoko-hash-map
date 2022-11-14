@@ -7,9 +7,11 @@ module {
 
   public type Iter<T> = Set.Iter<T>;
 
-  public type IterNative<T> = Set.IterNative<T>;
+  public type IterNext<T> = Set.IterNext<T>;
 
   public type HashUtils<K> = Set.HashUtils<K>;
+
+  public let { hashInt; hashText; hashPrincipal; hashBlob; hashBool } = Set;
 
   public let { ihash; nhash; thash; phash; bhash; lhash; useHash; calcHash } = Set;
 
@@ -21,33 +23,19 @@ module {
 
   public let { putBefore; putAfter; addBefore; addAfter } = Set;
 
-  public let { remove; delete } = Set;
+  public let { remove; delete; pop; popFront } = Set;
 
-  public let { pop; popFront } = Set;
+  public let { peek; peekFront; cycle; cycleFront } = Set;
 
-  public let { cycle; cycleFront } = Set;
-
-  public let { peek; peekFront } = Set;
-
-  public let { filter; clone } = Set;
+  public let { filter; filterDesc; clone; cloneDesc } = Set;
 
   public let { keys; keysDesc } = Set;
 
   public let { keysFrom; keysFromDesc } = Set;
 
-  public let { forEach; forEachDesc } = Set;
+  public let { find; findDesc; some; someDesc; every; everyDesc; forEach; forEachDesc } = Set;
 
-  public let { every; everyDesc } = Set;
+  public let { fromIter; fromIterDesc; fromIterMap; fromIterMapDesc } = Set;
 
-  public let { some; someDesc } = Set;
-
-  public let { find; findDesc } = Set;
-
-  public let { fromIter; fromIterDesc } = Set;
-
-  public let { fromIterMap; fromIterMapDesc } = Set;
-
-  public let { toArray; toArrayDesc } = Set;
-
-  public let { toArrayMap; toArrayMapDesc } = Set;
+  public let { toArray; toArrayDesc; toArrayMap; toArrayMapDesc } = Set;
 };

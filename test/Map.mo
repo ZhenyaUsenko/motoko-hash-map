@@ -92,27 +92,27 @@ module {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    assert Map.find<Text, Nat>(map, func(key, value) { key == "climate" }) == (?"climate", ?5);
-    assert Map.find<Text, Nat>(map, func(key, value) { key == "decision" }) == (?"decision", ?10);
-    assert Map.find<Text, Nat>(map, func(key, value) { key == "topic" }) == (?"topic", ?15);
-    assert Map.find<Text, Nat>(map, func(key, value) { key == "assistance" }) == (?"assistance", ?20);
+    assert Map.find<Text, Nat>(map, func(key, value) { key == "climate" }) == ?("climate", 5);
+    assert Map.find<Text, Nat>(map, func(key, value) { key == "decision" }) == ?("decision", 10);
+    assert Map.find<Text, Nat>(map, func(key, value) { key == "topic" }) == ?("topic", 15);
+    assert Map.find<Text, Nat>(map, func(key, value) { key == "assistance" }) == ?("assistance", 20);
 
-    assert Map.findDesc<Text, Nat>(map, func(key, value) { key == "climate" }) == (?"climate", ?5);
-    assert Map.findDesc<Text, Nat>(map, func(key, value) { key == "decision" }) == (?"decision", ?10);
-    assert Map.findDesc<Text, Nat>(map, func(key, value) { key == "topic" }) == (?"topic", ?15);
-    assert Map.findDesc<Text, Nat>(map, func(key, value) { key == "assistance" }) == (?"assistance", ?20);
+    assert Map.findDesc<Text, Nat>(map, func(key, value) { key == "climate" }) == ?("climate", 5);
+    assert Map.findDesc<Text, Nat>(map, func(key, value) { key == "decision" }) == ?("decision", 10);
+    assert Map.findDesc<Text, Nat>(map, func(key, value) { key == "topic" }) == ?("topic", 15);
+    assert Map.findDesc<Text, Nat>(map, func(key, value) { key == "assistance" }) == ?("assistance", 20);
 
-    assert Map.find<Text, Nat>(map, func(key, value) { value > 5 }) == (?"language", ?6);
-    assert Map.find<Text, Nat>(map, func(key, value) { value < 15 }) == (?"importance", ?1);
+    assert Map.find<Text, Nat>(map, func(key, value) { value > 5 }) == ?("language", 6);
+    assert Map.find<Text, Nat>(map, func(key, value) { value < 15 }) == ?("importance", 1);
 
-    assert Map.findDesc<Text, Nat>(map, func(key, value) { value > 5 }) == (?"assistance", ?20);
-    assert Map.findDesc<Text, Nat>(map, func(key, value) { value < 15 }) == (?"employment", ?14);
+    assert Map.findDesc<Text, Nat>(map, func(key, value) { value > 5 }) == ?("assistance", 20);
+    assert Map.findDesc<Text, Nat>(map, func(key, value) { value < 15 }) == ?("employment", 14);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     for (key in Map.keys(map)) assert Map.has(map, thash, key);
 
-    for (value in Map.vals(map)) assert Map.find<Text, Nat>(map, func(key, mapValue) { mapValue == value }) != (null, null);
+    for (value in Map.vals(map)) assert Map.find<Text, Nat>(map, func(key, mapValue) { mapValue == value }) != null;
 
     for ((key, value) in Map.entries(map)) assert Map.get(map, thash, key) == ?value;
 

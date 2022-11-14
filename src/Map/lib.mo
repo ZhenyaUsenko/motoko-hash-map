@@ -7,9 +7,11 @@ module {
 
   public type Iter<T> = Map.Iter<T>;
 
-  public type IterNative<T> = Map.IterNative<T>;
+  public type IterNext<T> = Map.IterNext<T>;
 
   public type HashUtils<K> = Map.HashUtils<K>;
+
+  public let { hashInt; hashText; hashPrincipal; hashBlob; hashBool } = Map;
 
   public let { ihash; nhash; thash; phash; bhash; lhash; useHash; calcHash } = Map;
 
@@ -19,37 +21,21 @@ module {
 
   public let { put; putFront; set; setFront; putMove; putMoveFront; setMove; setMoveFront } = Map;
 
-  public let { putBefore; putAfter; setBefore; setAfter } = Map;
+  public let { putBefore; putAfter; setBefore; setAfter; update; updateFront; updateMove; updateMoveFront } = Map;
 
-  public let { update; updateFront; updateMove; updateMoveFront } = Map;
+  public let { remove; delete; pop; popFront } = Map;
 
-  public let { remove; delete } = Map;
+  public let { peek; peekFront; cycle; cycleFront } = Map;
 
-  public let { pop; popFront } = Map;
-
-  public let { cycle; cycleFront } = Map;
-
-  public let { peek; peekFront } = Map;
-
-  public let { mapFilter; map; filter; clone } = Map;
+  public let { mapFilter; mapFilterDesc; map; mapDesc; filter; filterDesc; clone; cloneDesc } = Map;
 
   public let { keys; keysDesc; vals; valsDesc; entries; entriesDesc } = Map;
 
   public let { keysFrom; keysFromDesc; valsFrom; valsFromDesc; entriesFrom; entriesFromDesc } = Map;
 
-  public let { forEach; forEachDesc } = Map;
+  public let { find; findDesc; some; someDesc; every; everyDesc; forEach; forEachDesc } = Map;
 
-  public let { every; everyDesc } = Map;
+  public let { fromIter; fromIterDesc; fromIterMap; fromIterMapDesc } = Map;
 
-  public let { some; someDesc } = Map;
-
-  public let { find; findDesc } = Map;
-
-  public let { fromIter; fromIterDesc } = Map;
-
-  public let { fromIterMap; fromIterMapDesc } = Map;
-
-  public let { toArray; toArrayDesc } = Map;
-
-  public let { toArrayMap; toArrayMapDesc } = Map;
+  public let { toArray; toArrayDesc; toArrayMap; toArrayMapDesc } = Map;
 };

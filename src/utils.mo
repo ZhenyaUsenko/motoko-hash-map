@@ -37,27 +37,27 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public let ihash: HashUtils<Int> = (hashInt, func(a, b) { a == b }, func() { 0 });
+  public let ihash: HashUtils<Int> = (hashInt, func(a, b) = a == b, func() = 0);
 
-  public let nhash: HashUtils<Nat> = (hashInt, func(a, b) { a == b }, func() { 0 });
+  public let nhash: HashUtils<Nat> = (hashInt, func(a, b) = a == b, func() = 0);
 
-  public let thash: HashUtils<Text> = (hashText, func(a, b) { a == b }, func() { "" });
+  public let thash: HashUtils<Text> = (hashText, func(a, b) = a == b, func() = "");
 
-  public let phash: HashUtils<Principal> = (hashPrincipal, func(a, b) { a == b }, func() { Prim.principalOfBlob("") });
+  public let phash: HashUtils<Principal> = (hashPrincipal, func(a, b) = a == b, func() = Prim.principalOfBlob(""));
 
-  public let bhash: HashUtils<Blob> = (hashBlob, func(a, b) { a == b }, func() { "" });
+  public let bhash: HashUtils<Blob> = (hashBlob, func(a, b) = a == b, func() = "");
 
-  public let lhash: HashUtils<Bool> = (hashBool, func(a, b) { true }, func() { false });
+  public let lhash: HashUtils<Bool> = (hashBool, func(a, b) = true, func() = false);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func useHash<K>((getHash, areEqual, getNullKey): HashUtils<K>, hash: Nat32): HashUtils<K> {
-    return (func(key) { hash }, areEqual, getNullKey);
+    return (func(key) = hash, areEqual, getNullKey);
   };
 
   public func calcHash<K>((getHash, areEqual, getNullKey): HashUtils<K>, key: K): HashUtils<K> {
     let hash = getHash(key);
 
-    return (func(key) { hash }, areEqual, getNullKey);
+    return (func(key) = hash, areEqual, getNullKey);
   };
 };

@@ -22,7 +22,7 @@ module {
     moveNext: () -> Iter<T>;
   };
 
-  public type IterNative<T> = {
+  public type IterNext<T> = {
     next: () -> ?T;
   };
 
@@ -49,20 +49,22 @@ module {
   let HASH_CHUNK_SIZE = 4:Nat32;
   let NULL_HASH = 0xffffffff:Nat32;
 
+  func noop<T>(): T = trap("unreachable");
+
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   func createEdgeEntry<K, V>(nullKey: K): Entry<K, V> {
-    let tempEntry: Entry<K, V> = (nullKey, null, NULL_HASH, [var]);
-    let newEdgeEntry: Entry<K, V> = (nullKey, null, NULL_HASH, [var tempEntry, tempEntry, tempEntry, tempEntry, tempEntry, tempEntry]);
+    let tempEntry = (nullKey, null, NULL_HASH, [var]):Entry<K, V>;
+    let newEdge = (nullKey, null, NULL_HASH, [var tempEntry, tempEntry, tempEntry, tempEntry, tempEntry, tempEntry]);
 
-    newEdgeEntry.3[BRANCH_1] := newEdgeEntry;
-    newEdgeEntry.3[BRANCH_2] := newEdgeEntry;
-    newEdgeEntry.3[BRANCH_3] := newEdgeEntry;
-    newEdgeEntry.3[BRANCH_4] := newEdgeEntry;
-    newEdgeEntry.3[DEQ_PREV] := newEdgeEntry;
-    newEdgeEntry.3[DEQ_NEXT] := newEdgeEntry;
+    newEdge.3[BRANCH_1] := newEdge;
+    newEdge.3[BRANCH_2] := newEdge;
+    newEdge.3[BRANCH_3] := newEdge;
+    newEdge.3[BRANCH_4] := newEdge;
+    newEdge.3[DEQ_PREV] := newEdge;
+    newEdge.3[DEQ_NEXT] := newEdge;
 
-    newEdgeEntry;
+    newEdge;
   };
 
   public func new<K, V>(hashUtils: HashUtils<K>): Map<K, V> {
@@ -250,7 +252,7 @@ module {
     };
   };
 
-  public func putMove<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, valueParam: V): ?V {
+  public func putMove<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, valueParam: ?V): ?V {
     let hashParam = hashUtils.0(keyParam);
     var shiftingHash = hashParam;
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
@@ -258,17 +260,23 @@ module {
 
     loop {
       if (entry.2 == NULL_HASH) {
-        let deqPrev = map.0.3[DEQ_PREV];
-        let newEntry = (keyParam, ?valueParam, hashParam, [var map.0, map.0, map.0, map.0, deqPrev, map.0]);
+        switch (valueParam) {
+          case (null) return null;
 
-        deqPrev.3[DEQ_NEXT] := newEntry;
-        map.0.3[DEQ_PREV] := newEntry;
-        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
-        map.1[SIZE] +%= 1;
+          case (_) {
+            let deqPrev = map.0.3[DEQ_PREV];
+            let newEntry = (keyParam, valueParam, hashParam, [var map.0, map.0, map.0, map.0, deqPrev, map.0]);
 
-        return null;
+            deqPrev.3[DEQ_NEXT] := newEntry;
+            map.0.3[DEQ_PREV] := newEntry;
+            parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+            map.1[SIZE] +%= 1;
+
+            return null;
+          };
+        };
       } else if (entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
-        let newEntry = (entry.0, ?valueParam, entry.2, entry.3);
+        let newEntry = switch (valueParam) { case (null) entry; case (_) (entry.0, valueParam, entry.2, entry.3) };
 
         let deqNextOld = entry.3[DEQ_NEXT];
 
@@ -298,7 +306,7 @@ module {
     };
   };
 
-  public func putMoveFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, valueParam: V): ?V {
+  public func putMoveFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, valueParam: ?V): ?V {
     let hashParam = hashUtils.0(keyParam);
     var shiftingHash = hashParam;
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
@@ -306,17 +314,23 @@ module {
 
     loop {
       if (entry.2 == NULL_HASH) {
-        let deqNext = map.0.3[DEQ_NEXT];
-        let newEntry = (keyParam, ?valueParam, hashParam, [var map.0, map.0, map.0, map.0, map.0, deqNext]);
+        switch (valueParam) {
+          case (null) return null;
 
-        deqNext.3[DEQ_PREV] := newEntry;
-        map.0.3[DEQ_NEXT] := newEntry;
-        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
-        map.1[SIZE] +%= 1;
+          case (_) {
+            let deqNext = map.0.3[DEQ_NEXT];
+            let newEntry = (keyParam, valueParam, hashParam, [var map.0, map.0, map.0, map.0, map.0, deqNext]);
 
-        return null;
+            deqNext.3[DEQ_PREV] := newEntry;
+            map.0.3[DEQ_NEXT] := newEntry;
+            parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+            map.1[SIZE] +%= 1;
+
+            return null;
+          };
+        };
       } else if (entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
-        let newEntry = (entry.0, ?valueParam, entry.2, entry.3);
+        let newEntry = switch (valueParam) { case (null) entry; case (_) (entry.0, valueParam, entry.2, entry.3) };
 
         let deqPrevOld = entry.3[DEQ_PREV];
 
@@ -346,7 +360,7 @@ module {
     };
   };
 
-  public func setMove<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, valueParam: V) {
+  public func setMove<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, valueParam: ?V) {
     let hashParam = hashUtils.0(keyParam);
     var shiftingHash = hashParam;
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
@@ -354,17 +368,23 @@ module {
 
     loop {
       if (entry.2 == NULL_HASH) {
-        let deqPrev = map.0.3[DEQ_PREV];
-        let newEntry = (keyParam, ?valueParam, hashParam, [var map.0, map.0, map.0, map.0, deqPrev, map.0]);
+        switch (valueParam) {
+          case (null) return;
 
-        deqPrev.3[DEQ_NEXT] := newEntry;
-        map.0.3[DEQ_PREV] := newEntry;
-        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
-        map.1[SIZE] +%= 1;
+          case (_) {
+            let deqPrev = map.0.3[DEQ_PREV];
+            let newEntry = (keyParam, valueParam, hashParam, [var map.0, map.0, map.0, map.0, deqPrev, map.0]);
 
-        return;
+            deqPrev.3[DEQ_NEXT] := newEntry;
+            map.0.3[DEQ_PREV] := newEntry;
+            parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+            map.1[SIZE] +%= 1;
+
+            return;
+          };
+        };
       } else if (entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
-        let newEntry = (entry.0, ?valueParam, entry.2, entry.3);
+        let newEntry = switch (valueParam) { case (null) entry; case (_) (entry.0, valueParam, entry.2, entry.3) };
 
         let deqNextOld = entry.3[DEQ_NEXT];
 
@@ -394,7 +414,7 @@ module {
     };
   };
 
-  public func setMoveFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, valueParam: V) {
+  public func setMoveFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, valueParam: ?V) {
     let hashParam = hashUtils.0(keyParam);
     var shiftingHash = hashParam;
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
@@ -402,17 +422,23 @@ module {
 
     loop {
       if (entry.2 == NULL_HASH) {
-        let deqNext = map.0.3[DEQ_NEXT];
-        let newEntry = (keyParam, ?valueParam, hashParam, [var map.0, map.0, map.0, map.0, map.0, deqNext]);
+        switch (valueParam) {
+          case (null) return;
 
-        deqNext.3[DEQ_PREV] := newEntry;
-        map.0.3[DEQ_NEXT] := newEntry;
-        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
-        map.1[SIZE] +%= 1;
+          case (_) {
+            let deqNext = map.0.3[DEQ_NEXT];
+            let newEntry = (keyParam, valueParam, hashParam, [var map.0, map.0, map.0, map.0, map.0, deqNext]);
 
-        return;
+            deqNext.3[DEQ_PREV] := newEntry;
+            map.0.3[DEQ_NEXT] := newEntry;
+            parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+            map.1[SIZE] +%= 1;
+
+            return;
+          };
+        };
       } else if (entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
-        let newEntry = (entry.0, ?valueParam, entry.2, entry.3);
+        let newEntry = switch (valueParam) { case (null) entry; case (_) (entry.0, valueParam, entry.2, entry.3) };
 
         let deqPrevOld = entry.3[DEQ_PREV];
 
@@ -442,199 +468,247 @@ module {
     };
   };
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  public func putBefore<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, placeKeyParam: K, valueParam: V): ?V {
+  public func putBefore<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, placeKeyParam: K, valueParam: ?V): ?V {
     let hashParam = hashUtils.0(keyParam);
     var shiftingHash = hashParam;
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
     var parentEntry = map.0;
 
     let placeHashParam = hashUtils.0(placeKeyParam);
+
     var shiftingPlaceHash = placeHashParam;
+
     var placeEntry = map.0.3[nat(shiftingPlaceHash % HASH_CHUNK_SIZE)];
 
-    loop if (placeEntry.2 == NULL_HASH or placeEntry.2 == placeHashParam and hashUtils.1(placeEntry.0, placeKeyParam)) loop {
-      if (entry.2 == NULL_HASH) {
-        let deqPrev = placeEntry.3[DEQ_PREV];
-        let newEntry = (keyParam, ?valueParam, hashParam, [var map.0, map.0, map.0, map.0, deqPrev, placeEntry]);
+    loop {
+      if (placeEntry.2 == NULL_HASH or placeEntry.2 == placeHashParam and hashUtils.1(placeEntry.0, placeKeyParam)) loop {
+        if (entry.2 == NULL_HASH) {
+          switch (valueParam) {
+            case (null) return null;
 
-        deqPrev.3[DEQ_NEXT] := newEntry;
-        placeEntry.3[DEQ_PREV] := newEntry;
-        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
-        map.1[SIZE] +%= 1;
+            case (_) {
+              let deqPrev = placeEntry.3[DEQ_PREV];
+              let newEntry = (keyParam, valueParam, hashParam, [var map.0, map.0, map.0, map.0, deqPrev, placeEntry]);
 
-        return null;
-      } else if (entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
-        let deqPrevOld = entry.3[DEQ_PREV];
-        let deqNextOld = entry.3[DEQ_NEXT];
-        let deqPrev = placeEntry.3[DEQ_PREV];
-        let newEntry = (entry.0, ?valueParam, entry.2, entry.3);
+              deqPrev.3[DEQ_NEXT] := newEntry;
+              placeEntry.3[DEQ_PREV] := newEntry;
+              parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+              map.1[SIZE] +%= 1;
 
-        deqPrevOld.3[DEQ_NEXT] := deqNextOld;
-        deqNextOld.3[DEQ_PREV] := deqPrevOld;
-        newEntry.3[DEQ_PREV] := deqPrev;
-        newEntry.3[DEQ_NEXT] := placeEntry;
-        deqPrev.3[DEQ_NEXT] := newEntry;
-        placeEntry.3[DEQ_PREV] := newEntry;
-        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+              return null;
+            };
+          };
+        } else if (entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
+          let newEntry = switch (valueParam) { case (null) entry; case (_) (entry.0, valueParam, entry.2, entry.3) };
 
-        return entry.1;
+          let deqNextOld = entry.3[DEQ_NEXT];
+
+          let deqPrevOld = entry.3[DEQ_PREV];
+          let deqPrev = placeEntry.3[DEQ_PREV];
+
+          deqPrevOld.3[DEQ_NEXT] := deqNextOld;
+          deqNextOld.3[DEQ_PREV] := deqPrevOld;
+          newEntry.3[DEQ_PREV] := deqPrev;
+          newEntry.3[DEQ_NEXT] := placeEntry;
+          deqPrev.3[DEQ_NEXT] := newEntry;
+          placeEntry.3[DEQ_PREV] := newEntry;
+
+          parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+
+          return entry.1;
+        } else {
+          parentEntry := entry;
+          shiftingHash >>= HASH_OFFSET;
+          entry := entry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        };
       } else {
-        parentEntry := entry;
-        shiftingHash >>= HASH_OFFSET;
-        entry := entry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        shiftingPlaceHash >>= HASH_OFFSET;
+        placeEntry := placeEntry.3[nat(shiftingPlaceHash % HASH_CHUNK_SIZE)];
       };
-    } else {
-      shiftingPlaceHash >>= HASH_OFFSET;
-      placeEntry := placeEntry.3[nat(shiftingPlaceHash % HASH_CHUNK_SIZE)];
     };
   };
 
-  public func putAfter<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, placeKeyParam: K, valueParam: V): ?V {
+  public func putAfter<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, placeKeyParam: K, valueParam: ?V): ?V {
     let hashParam = hashUtils.0(keyParam);
     var shiftingHash = hashParam;
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
     var parentEntry = map.0;
 
     let placeHashParam = hashUtils.0(placeKeyParam);
+
     var shiftingPlaceHash = placeHashParam;
+
     var placeEntry = map.0.3[nat(shiftingPlaceHash % HASH_CHUNK_SIZE)];
 
-    loop if (placeEntry.2 == NULL_HASH or placeEntry.2 == placeHashParam and hashUtils.1(placeEntry.0, placeKeyParam)) loop {
-      if (entry.2 == NULL_HASH) {
-        let deqNext = placeEntry.3[DEQ_NEXT];
-        let newEntry = (keyParam, ?valueParam, hashParam, [var map.0, map.0, map.0, map.0, placeEntry, deqNext]);
+    loop {
+      if (placeEntry.2 == NULL_HASH or placeEntry.2 == placeHashParam and hashUtils.1(placeEntry.0, placeKeyParam)) loop {
+        if (entry.2 == NULL_HASH) {
+          switch (valueParam) {
+            case (null) return null;
 
-        deqNext.3[DEQ_PREV] := newEntry;
-        placeEntry.3[DEQ_NEXT] := newEntry;
-        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
-        map.1[SIZE] +%= 1;
+            case (_) {
+              let deqNext = placeEntry.3[DEQ_NEXT];
+              let newEntry = (keyParam, valueParam, hashParam, [var map.0, map.0, map.0, map.0, placeEntry, deqNext]);
 
-        return null;
-      } else if (entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
-        let deqNextOld = entry.3[DEQ_NEXT];
-        let deqPrevOld = entry.3[DEQ_PREV];
-        let deqNext = placeEntry.3[DEQ_NEXT];
-        let newEntry = (entry.0, ?valueParam, entry.2, entry.3);
+              deqNext.3[DEQ_PREV] := newEntry;
+              placeEntry.3[DEQ_NEXT] := newEntry;
+              parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+              map.1[SIZE] +%= 1;
 
-        deqNextOld.3[DEQ_PREV] := deqPrevOld;
-        deqPrevOld.3[DEQ_NEXT] := deqNextOld;
-        newEntry.3[DEQ_NEXT] := deqNext;
-        newEntry.3[DEQ_PREV] := placeEntry;
-        deqNext.3[DEQ_PREV] := newEntry;
-        placeEntry.3[DEQ_NEXT] := newEntry;
-        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+              return null;
+            };
+          };
+        } else if (entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
+          let newEntry = switch (valueParam) { case (null) entry; case (_) (entry.0, valueParam, entry.2, entry.3) };
 
-        return entry.1;
+          let deqPrevOld = entry.3[DEQ_PREV];
+
+          let deqNextOld = entry.3[DEQ_NEXT];
+          let deqNext = placeEntry.3[DEQ_NEXT];
+
+          deqNextOld.3[DEQ_PREV] := deqPrevOld;
+          deqPrevOld.3[DEQ_NEXT] := deqNextOld;
+          newEntry.3[DEQ_NEXT] := deqNext;
+          newEntry.3[DEQ_PREV] := placeEntry;
+          deqNext.3[DEQ_PREV] := newEntry;
+          placeEntry.3[DEQ_NEXT] := newEntry;
+
+          parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+
+          return entry.1;
+        } else {
+          parentEntry := entry;
+          shiftingHash >>= HASH_OFFSET;
+          entry := entry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        };
       } else {
-        parentEntry := entry;
-        shiftingHash >>= HASH_OFFSET;
-        entry := entry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        shiftingPlaceHash >>= HASH_OFFSET;
+        placeEntry := placeEntry.3[nat(shiftingPlaceHash % HASH_CHUNK_SIZE)];
       };
-    } else {
-      shiftingPlaceHash >>= HASH_OFFSET;
-      placeEntry := placeEntry.3[nat(shiftingPlaceHash % HASH_CHUNK_SIZE)];
     };
   };
 
-  public func setBefore<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, placeKeyParam: K, valueParam: V) {
+  public func setBefore<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, placeKeyParam: K, valueParam: ?V) {
     let hashParam = hashUtils.0(keyParam);
     var shiftingHash = hashParam;
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
     var parentEntry = map.0;
 
     let placeHashParam = hashUtils.0(placeKeyParam);
+
     var shiftingPlaceHash = placeHashParam;
+
     var placeEntry = map.0.3[nat(shiftingPlaceHash % HASH_CHUNK_SIZE)];
 
-    loop if (placeEntry.2 == NULL_HASH or placeEntry.2 == placeHashParam and hashUtils.1(placeEntry.0, placeKeyParam)) loop {
-      if (entry.2 == NULL_HASH) {
-        let deqPrev = placeEntry.3[DEQ_PREV];
-        let newEntry = (keyParam, ?valueParam, hashParam, [var map.0, map.0, map.0, map.0, deqPrev, placeEntry]);
+    loop {
+      if (placeEntry.2 == NULL_HASH or placeEntry.2 == placeHashParam and hashUtils.1(placeEntry.0, placeKeyParam)) loop {
+        if (entry.2 == NULL_HASH) {
+          switch (valueParam) {
+            case (null) return;
 
-        deqPrev.3[DEQ_NEXT] := newEntry;
-        placeEntry.3[DEQ_PREV] := newEntry;
-        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
-        map.1[SIZE] +%= 1;
+            case (_) {
+              let deqPrev = placeEntry.3[DEQ_PREV];
+              let newEntry = (keyParam, valueParam, hashParam, [var map.0, map.0, map.0, map.0, deqPrev, placeEntry]);
 
-        return;
-      } else if (entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
-        let deqPrevOld = entry.3[DEQ_PREV];
-        let deqNextOld = entry.3[DEQ_NEXT];
-        let deqPrev = placeEntry.3[DEQ_PREV];
-        let newEntry = (entry.0, ?valueParam, entry.2, entry.3);
+              deqPrev.3[DEQ_NEXT] := newEntry;
+              placeEntry.3[DEQ_PREV] := newEntry;
+              parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+              map.1[SIZE] +%= 1;
 
-        deqPrevOld.3[DEQ_NEXT] := deqNextOld;
-        deqNextOld.3[DEQ_PREV] := deqPrevOld;
-        newEntry.3[DEQ_PREV] := deqPrev;
-        newEntry.3[DEQ_NEXT] := placeEntry;
-        deqPrev.3[DEQ_NEXT] := newEntry;
-        placeEntry.3[DEQ_PREV] := newEntry;
-        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+              return;
+            };
+          };
+        } else if (entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
+          let newEntry = switch (valueParam) { case (null) entry; case (_) (entry.0, valueParam, entry.2, entry.3) };
 
-        return;
+          let deqNextOld = entry.3[DEQ_NEXT];
+
+          let deqPrevOld = entry.3[DEQ_PREV];
+          let deqPrev = placeEntry.3[DEQ_PREV];
+
+          deqPrevOld.3[DEQ_NEXT] := deqNextOld;
+          deqNextOld.3[DEQ_PREV] := deqPrevOld;
+          newEntry.3[DEQ_PREV] := deqPrev;
+          newEntry.3[DEQ_NEXT] := placeEntry;
+          deqPrev.3[DEQ_NEXT] := newEntry;
+          placeEntry.3[DEQ_PREV] := newEntry;
+
+          parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+
+          return;
+        } else {
+          parentEntry := entry;
+          shiftingHash >>= HASH_OFFSET;
+          entry := entry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        };
       } else {
-        parentEntry := entry;
-        shiftingHash >>= HASH_OFFSET;
-        entry := entry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        shiftingPlaceHash >>= HASH_OFFSET;
+        placeEntry := placeEntry.3[nat(shiftingPlaceHash % HASH_CHUNK_SIZE)];
       };
-    } else {
-      shiftingPlaceHash >>= HASH_OFFSET;
-      placeEntry := placeEntry.3[nat(shiftingPlaceHash % HASH_CHUNK_SIZE)];
     };
   };
 
-  public func setAfter<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, placeKeyParam: K, valueParam: V) {
+  public func setAfter<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, placeKeyParam: K, valueParam: ?V) {
     let hashParam = hashUtils.0(keyParam);
     var shiftingHash = hashParam;
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
     var parentEntry = map.0;
 
     let placeHashParam = hashUtils.0(placeKeyParam);
+
     var shiftingPlaceHash = placeHashParam;
+
     var placeEntry = map.0.3[nat(shiftingPlaceHash % HASH_CHUNK_SIZE)];
 
-    loop if (placeEntry.2 == NULL_HASH or placeEntry.2 == placeHashParam and hashUtils.1(placeEntry.0, placeKeyParam)) loop {
-      if (entry.2 == NULL_HASH) {
-        let deqNext = placeEntry.3[DEQ_NEXT];
-        let newEntry = (keyParam, ?valueParam, hashParam, [var map.0, map.0, map.0, map.0, placeEntry, deqNext]);
+    loop {
+      if (placeEntry.2 == NULL_HASH or placeEntry.2 == placeHashParam and hashUtils.1(placeEntry.0, placeKeyParam)) loop {
+        if (entry.2 == NULL_HASH) {
+          switch (valueParam) {
+            case (null) return;
 
-        deqNext.3[DEQ_PREV] := newEntry;
-        placeEntry.3[DEQ_NEXT] := newEntry;
-        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
-        map.1[SIZE] +%= 1;
+            case (_) {
+              let deqNext = placeEntry.3[DEQ_NEXT];
+              let newEntry = (keyParam, valueParam, hashParam, [var map.0, map.0, map.0, map.0, placeEntry, deqNext]);
 
-        return;
-      } else if (entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
-        let deqNextOld = entry.3[DEQ_NEXT];
-        let deqPrevOld = entry.3[DEQ_PREV];
-        let deqNext = placeEntry.3[DEQ_NEXT];
-        let newEntry = (entry.0, ?valueParam, entry.2, entry.3);
+              deqNext.3[DEQ_PREV] := newEntry;
+              placeEntry.3[DEQ_NEXT] := newEntry;
+              parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+              map.1[SIZE] +%= 1;
 
-        deqNextOld.3[DEQ_PREV] := deqPrevOld;
-        deqPrevOld.3[DEQ_NEXT] := deqNextOld;
-        newEntry.3[DEQ_NEXT] := deqNext;
-        newEntry.3[DEQ_PREV] := placeEntry;
-        deqNext.3[DEQ_PREV] := newEntry;
-        placeEntry.3[DEQ_NEXT] := newEntry;
-        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+              return;
+            };
+          };
+        } else if (entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
+          let newEntry = switch (valueParam) { case (null) entry; case (_) (entry.0, valueParam, entry.2, entry.3) };
 
-        return;
+          let deqPrevOld = entry.3[DEQ_PREV];
+
+          let deqNextOld = entry.3[DEQ_NEXT];
+          let deqNext = placeEntry.3[DEQ_NEXT];
+
+          deqNextOld.3[DEQ_PREV] := deqPrevOld;
+          deqPrevOld.3[DEQ_NEXT] := deqNextOld;
+          newEntry.3[DEQ_NEXT] := deqNext;
+          newEntry.3[DEQ_PREV] := placeEntry;
+          deqNext.3[DEQ_PREV] := newEntry;
+          placeEntry.3[DEQ_NEXT] := newEntry;
+
+          parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+
+          return;
+        } else {
+          parentEntry := entry;
+          shiftingHash >>= HASH_OFFSET;
+          entry := entry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        };
       } else {
-        parentEntry := entry;
-        shiftingHash >>= HASH_OFFSET;
-        entry := entry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        shiftingPlaceHash >>= HASH_OFFSET;
+        placeEntry := placeEntry.3[nat(shiftingPlaceHash % HASH_CHUNK_SIZE)];
       };
-    } else {
-      shiftingPlaceHash >>= HASH_OFFSET;
-      placeEntry := placeEntry.3[nat(shiftingPlaceHash % HASH_CHUNK_SIZE)];
     };
   };
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  public func update<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, fn: (K, ?V) -> V): V {
+  public func update<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, getNewValue: (K, ?V) -> V): V {
     let hashParam = hashUtils.0(keyParam);
     var shiftingHash = hashParam;
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
@@ -642,8 +716,9 @@ module {
 
     loop {
       if (entry.2 == NULL_HASH) {
+        let newValue = getNewValue(keyParam, null);
+
         let deqPrev = map.0.3[DEQ_PREV];
-        let newValue = fn(keyParam, null);
         let newEntry = (keyParam, ?newValue, hashParam, [var map.0, map.0, map.0, map.0, deqPrev, map.0]);
 
         deqPrev.3[DEQ_NEXT] := newEntry;
@@ -653,7 +728,8 @@ module {
 
         return newValue;
       } else if (entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
-        let newValue = fn(entry.0, entry.1);
+        let newValue = getNewValue(entry.0, entry.1);
+
         let newEntry = (entry.0, ?newValue, entry.2, entry.3);
 
         entry.3[DEQ_PREV].3[DEQ_NEXT] := newEntry;
@@ -670,7 +746,7 @@ module {
     };
   };
 
-  public func updateFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, fn: (K, ?V) -> V): V {
+  public func updateFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, getNewValue: (K, ?V) -> V): V {
     let hashParam = hashUtils.0(keyParam);
     var shiftingHash = hashParam;
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
@@ -678,8 +754,9 @@ module {
 
     loop {
       if (entry.2 == NULL_HASH) {
+        let newValue = getNewValue(keyParam, null);
+
         let deqNext = map.0.3[DEQ_NEXT];
-        let newValue = fn(keyParam, null);
         let newEntry = (keyParam, ?newValue, hashParam, [var map.0, map.0, map.0, map.0, map.0, deqNext]);
 
         deqNext.3[DEQ_PREV] := newEntry;
@@ -689,7 +766,8 @@ module {
 
         return newValue;
       } else if (entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
-        let newValue = fn(entry.0, entry.1);
+        let newValue = getNewValue(entry.0, entry.1);
+
         let newEntry = (entry.0, ?newValue, entry.2, entry.3);
 
         entry.3[DEQ_NEXT].3[DEQ_PREV] := newEntry;
@@ -706,7 +784,7 @@ module {
     };
   };
 
-  public func updateMove<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, fn: (K, ?V) -> V): V {
+  public func updateMove<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, getNewValue: (K, ?V) -> V): V {
     let hashParam = hashUtils.0(keyParam);
     var shiftingHash = hashParam;
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
@@ -714,8 +792,9 @@ module {
 
     loop {
       if (entry.2 == NULL_HASH) {
+        let newValue = getNewValue(keyParam, null);
+
         let deqPrev = map.0.3[DEQ_PREV];
-        let newValue = fn(keyParam, null);
         let newEntry = (keyParam, ?newValue, hashParam, [var map.0, map.0, map.0, map.0, deqPrev, map.0]);
 
         deqPrev.3[DEQ_NEXT] := newEntry;
@@ -725,7 +804,8 @@ module {
 
         return newValue;
       } else if (entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
-        let newValue = fn(entry.0, entry.1);
+        let newValue = getNewValue(entry.0, entry.1);
+
         let newEntry = (entry.0, ?newValue, entry.2, entry.3);
 
         let deqNextOld = entry.3[DEQ_NEXT];
@@ -756,7 +836,7 @@ module {
     };
   };
 
-  public func updateMoveFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, fn: (K, ?V) -> V): V {
+  public func updateMoveFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, getNewValue: (K, ?V) -> V): V {
     let hashParam = hashUtils.0(keyParam);
     var shiftingHash = hashParam;
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
@@ -764,8 +844,9 @@ module {
 
     loop {
       if (entry.2 == NULL_HASH) {
+        let newValue = getNewValue(keyParam, null);
+
         let deqNext = map.0.3[DEQ_NEXT];
-        let newValue = fn(keyParam, null);
         let newEntry = (keyParam, ?newValue, hashParam, [var map.0, map.0, map.0, map.0, map.0, deqNext]);
 
         deqNext.3[DEQ_PREV] := newEntry;
@@ -775,7 +856,8 @@ module {
 
         return newValue;
       } else if (entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
-        let newValue = fn(entry.0, entry.1);
+        let newValue = getNewValue(entry.0, entry.1);
+
         let newEntry = (entry.0, ?newValue, entry.2, entry.3);
 
         let deqPrevOld = entry.3[DEQ_PREV];
@@ -810,12 +892,13 @@ module {
 
   public func remove<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K): ?V {
     let hashParam = hashUtils.0(keyParam);
+
     var shiftingHash = hashParam;
-    var entry = map.0.3[nat(hashParam % HASH_CHUNK_SIZE)];
+    var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
     var parentEntry = map.0;
 
     loop {
-      if (entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
+      if (entry.2 == hashParam and (hashUtils.1(entry.0, keyParam))) {
         let deqPrev = entry.3[DEQ_PREV];
         let deqNext = entry.3[DEQ_NEXT];
         var leaf = entry;
@@ -830,42 +913,42 @@ module {
           let branch1 = leaf.3[BRANCH_1];
 
           if (branch1.2 != NULL_HASH) {
-            leafIndex := BRANCH_1;
             leafParent := leaf;
             leaf := branch1;
+            leafIndex := BRANCH_1;
           } else {
             let branch2 = leaf.3[BRANCH_2];
 
             if (branch2.2 != NULL_HASH) {
-              leafIndex := BRANCH_2;
               leafParent := leaf;
               leaf := branch2;
+              leafIndex := BRANCH_2;
             } else {
               let branch3 = leaf.3[BRANCH_3];
 
               if (branch3.2 != NULL_HASH) {
-                leafIndex := BRANCH_3;
                 leafParent := leaf;
                 leaf := branch3;
+                leafIndex := BRANCH_3;
               } else {
                 let branch4 = leaf.3[BRANCH_4];
 
                 if (branch4.2 != NULL_HASH) {
-                  leafIndex := BRANCH_4;
                   leafParent := leaf;
                   leaf := branch4;
-                } else if (leafIndex == NULL_BRANCH) {
-                  parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := map.0;
-
-                  return entry.1;
+                  leafIndex := BRANCH_4;
                 } else {
-                  parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := leaf;
-                  leafParent.3[leafIndex] := map.0;
+                  if (leafIndex == NULL_BRANCH) {
+                    parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := map.0;
+                  } else {
+                    parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := leaf;
+                    leafParent.3[leafIndex] := map.0;
 
-                  leaf.3[BRANCH_1] := entry.3[BRANCH_1];
-                  leaf.3[BRANCH_2] := entry.3[BRANCH_2];
-                  leaf.3[BRANCH_3] := entry.3[BRANCH_3];
-                  leaf.3[BRANCH_4] := entry.3[BRANCH_4];
+                    leaf.3[BRANCH_1] := entry.3[BRANCH_1];
+                    leaf.3[BRANCH_2] := entry.3[BRANCH_2];
+                    leaf.3[BRANCH_3] := entry.3[BRANCH_3];
+                    leaf.3[BRANCH_4] := entry.3[BRANCH_4];
+                  };
 
                   return entry.1;
                 };
@@ -885,12 +968,13 @@ module {
 
   public func delete<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K) {
     let hashParam = hashUtils.0(keyParam);
+
     var shiftingHash = hashParam;
-    var entry = map.0.3[nat(hashParam % HASH_CHUNK_SIZE)];
+    var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
     var parentEntry = map.0;
 
     loop {
-      if (entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
+      if (entry.2 == hashParam and (hashUtils.1(entry.0, keyParam))) {
         let deqPrev = entry.3[DEQ_PREV];
         let deqNext = entry.3[DEQ_NEXT];
         var leaf = entry;
@@ -905,42 +989,42 @@ module {
           let branch1 = leaf.3[BRANCH_1];
 
           if (branch1.2 != NULL_HASH) {
-            leafIndex := BRANCH_1;
             leafParent := leaf;
             leaf := branch1;
+            leafIndex := BRANCH_1;
           } else {
             let branch2 = leaf.3[BRANCH_2];
 
             if (branch2.2 != NULL_HASH) {
-              leafIndex := BRANCH_2;
               leafParent := leaf;
               leaf := branch2;
+              leafIndex := BRANCH_2;
             } else {
               let branch3 = leaf.3[BRANCH_3];
 
               if (branch3.2 != NULL_HASH) {
-                leafIndex := BRANCH_3;
                 leafParent := leaf;
                 leaf := branch3;
+                leafIndex := BRANCH_3;
               } else {
                 let branch4 = leaf.3[BRANCH_4];
 
                 if (branch4.2 != NULL_HASH) {
-                  leafIndex := BRANCH_4;
                   leafParent := leaf;
                   leaf := branch4;
-                } else if (leafIndex == NULL_BRANCH) {
-                  parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := map.0;
-
-                  return;
+                  leafIndex := BRANCH_4;
                 } else {
-                  parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := leaf;
-                  leafParent.3[leafIndex] := map.0;
+                  if (leafIndex == NULL_BRANCH) {
+                    parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := map.0;
+                  } else {
+                    parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := leaf;
+                    leafParent.3[leafIndex] := map.0;
 
-                  leaf.3[BRANCH_1] := entry.3[BRANCH_1];
-                  leaf.3[BRANCH_2] := entry.3[BRANCH_2];
-                  leaf.3[BRANCH_3] := entry.3[BRANCH_3];
-                  leaf.3[BRANCH_4] := entry.3[BRANCH_4];
+                    leaf.3[BRANCH_1] := entry.3[BRANCH_1];
+                    leaf.3[BRANCH_2] := entry.3[BRANCH_2];
+                    leaf.3[BRANCH_3] := entry.3[BRANCH_3];
+                    leaf.3[BRANCH_4] := entry.3[BRANCH_4];
+                  };
 
                   return;
                 };
@@ -958,232 +1042,326 @@ module {
     };
   };
 
+  public func pop<K, V>(map: Map<K, V>): ?(K, V) {
+    let deqLast = map.0.3[DEQ_PREV];
+
+    switch (deqLast.1) {
+      case (?someValue) {
+        var shiftingHash = deqLast.2;
+        var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        var parentEntry = map.0;
+
+        loop {
+          if (entry.2 == deqLast.2 and (entry.3[DEQ_NEXT].2 == NULL_HASH)) {
+            let deqPrev = entry.3[DEQ_PREV];
+
+            var leaf = entry;
+            var leafParent = parentEntry;
+            var leafIndex = NULL_BRANCH;
+
+            deqPrev.3[DEQ_NEXT] := map.0;
+            map.0.3[DEQ_PREV] := deqPrev;
+            map.1[SIZE] -%= 1;
+
+            loop {
+              let branch1 = leaf.3[BRANCH_1];
+
+              if (branch1.2 != NULL_HASH) {
+                leafParent := leaf;
+                leaf := branch1;
+                leafIndex := BRANCH_1;
+              } else {
+                let branch2 = leaf.3[BRANCH_2];
+
+                if (branch2.2 != NULL_HASH) {
+                  leafParent := leaf;
+                  leaf := branch2;
+                  leafIndex := BRANCH_2;
+                } else {
+                  let branch3 = leaf.3[BRANCH_3];
+
+                  if (branch3.2 != NULL_HASH) {
+                    leafParent := leaf;
+                    leaf := branch3;
+                    leafIndex := BRANCH_3;
+                  } else {
+                    let branch4 = leaf.3[BRANCH_4];
+
+                    if (branch4.2 != NULL_HASH) {
+                      leafParent := leaf;
+                      leaf := branch4;
+                      leafIndex := BRANCH_4;
+                    } else {
+                      if (leafIndex == NULL_BRANCH) {
+                        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := map.0;
+                      } else {
+                        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := leaf;
+                        leafParent.3[leafIndex] := map.0;
+
+                        leaf.3[BRANCH_1] := entry.3[BRANCH_1];
+                        leaf.3[BRANCH_2] := entry.3[BRANCH_2];
+                        leaf.3[BRANCH_3] := entry.3[BRANCH_3];
+                        leaf.3[BRANCH_4] := entry.3[BRANCH_4];
+                      };
+
+                      return ?(entry.0, someValue);
+                    };
+                  };
+                };
+              };
+            };
+          } else {
+            parentEntry := entry;
+            shiftingHash >>= HASH_OFFSET;
+            entry := entry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+          };
+        };
+      };
+
+      case (_) null;
+    };
+  };
+
+  public func popFront<K, V>(map: Map<K, V>): ?(K, V) {
+    let deqFirst = map.0.3[DEQ_NEXT];
+
+    switch (deqFirst.1) {
+      case (?someValue) {
+        var shiftingHash = deqFirst.2;
+        var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        var parentEntry = map.0;
+
+        loop {
+          if (entry.2 == deqFirst.2 and (entry.3[DEQ_PREV].2 == NULL_HASH)) {
+            let deqNext = entry.3[DEQ_NEXT];
+
+            var leaf = entry;
+            var leafParent = parentEntry;
+            var leafIndex = NULL_BRANCH;
+
+            deqNext.3[DEQ_PREV] := map.0;
+            map.0.3[DEQ_NEXT] := deqNext;
+            map.1[SIZE] -%= 1;
+
+            loop {
+              let branch1 = leaf.3[BRANCH_1];
+
+              if (branch1.2 != NULL_HASH) {
+                leafParent := leaf;
+                leaf := branch1;
+                leafIndex := BRANCH_1;
+              } else {
+                let branch2 = leaf.3[BRANCH_2];
+
+                if (branch2.2 != NULL_HASH) {
+                  leafParent := leaf;
+                  leaf := branch2;
+                  leafIndex := BRANCH_2;
+                } else {
+                  let branch3 = leaf.3[BRANCH_3];
+
+                  if (branch3.2 != NULL_HASH) {
+                    leafParent := leaf;
+                    leaf := branch3;
+                    leafIndex := BRANCH_3;
+                  } else {
+                    let branch4 = leaf.3[BRANCH_4];
+
+                    if (branch4.2 != NULL_HASH) {
+                      leafParent := leaf;
+                      leaf := branch4;
+                      leafIndex := BRANCH_4;
+                    } else {
+                      if (leafIndex == NULL_BRANCH) {
+                        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := map.0;
+                      } else {
+                        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := leaf;
+                        leafParent.3[leafIndex] := map.0;
+
+                        leaf.3[BRANCH_1] := entry.3[BRANCH_1];
+                        leaf.3[BRANCH_2] := entry.3[BRANCH_2];
+                        leaf.3[BRANCH_3] := entry.3[BRANCH_3];
+                        leaf.3[BRANCH_4] := entry.3[BRANCH_4];
+                      };
+
+                      return ?(entry.0, someValue);
+                    };
+                  };
+                };
+              };
+            };
+          } else {
+            parentEntry := entry;
+            shiftingHash >>= HASH_OFFSET;
+            entry := entry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+          };
+        };
+      };
+
+      case (_) null;
+    };
+  };
+
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func pop<K, V>(map: Map<K, V>): (?K, ?V) {
-    var entry = map.0.3[DEQ_PREV];
-    var shiftingHash = entry.2;
-    var parentEntry = map.0;
+  public func peek<K, V>(map: Map<K, V>): ?(K, V) {
+    let entry = map.0.3[DEQ_PREV];
 
-    if (shiftingHash == NULL_HASH) return (null, null);
+    switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
+  };
 
-    loop {
-      if (entry.3[DEQ_NEXT].2 == NULL_HASH) {
+  public func peekFront<K, V>(map: Map<K, V>): ?(K, V) {
+    let entry = map.0.3[DEQ_NEXT];
+
+    switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
+  };
+
+  public func cycle<K, V>(map: Map<K, V>): ?(K, V) {
+    let entry = map.0.3[DEQ_PREV];
+
+    switch (entry.1) {
+      case (?someValue) {
         let deqPrev = entry.3[DEQ_PREV];
-        var leaf = entry;
-        var leafParent = parentEntry;
-        var leafIndex = NULL_BRANCH;
 
-        deqPrev.3[DEQ_NEXT] := map.0;
-        map.0.3[DEQ_PREV] := deqPrev;
-        map.1[SIZE] -%= 1;
+        if (deqPrev.2 != NULL_HASH) {
+          let deqFirst = map.0.3[DEQ_NEXT];
 
-        loop {
-          let branch1 = leaf.3[BRANCH_1];
-
-          if (branch1.2 != NULL_HASH) {
-            leafIndex := BRANCH_1;
-            leafParent := leaf;
-            leaf := branch1;
-          } else {
-            let branch2 = leaf.3[BRANCH_2];
-
-            if (branch2.2 != NULL_HASH) {
-              leafIndex := BRANCH_2;
-              leafParent := leaf;
-              leaf := branch2;
-            } else {
-              let branch3 = leaf.3[BRANCH_3];
-
-              if (branch3.2 != NULL_HASH) {
-                leafIndex := BRANCH_3;
-                leafParent := leaf;
-                leaf := branch3;
-              } else {
-                let branch4 = leaf.3[BRANCH_4];
-
-                if (branch4.2 != NULL_HASH) {
-                  leafIndex := BRANCH_4;
-                  leafParent := leaf;
-                  leaf := branch4;
-                } else if (leafIndex == NULL_BRANCH) {
-                  parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := map.0;
-
-                  return (?entry.0, entry.1);
-                } else {
-                  parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := leaf;
-                  leafParent.3[leafIndex] := map.0;
-
-                  leaf.3[BRANCH_1] := entry.3[BRANCH_1];
-                  leaf.3[BRANCH_2] := entry.3[BRANCH_2];
-                  leaf.3[BRANCH_3] := entry.3[BRANCH_3];
-                  leaf.3[BRANCH_4] := entry.3[BRANCH_4];
-
-                  return (?entry.0, entry.1);
-                };
-              };
-            };
-          };
+          deqPrev.3[DEQ_NEXT] := map.0;
+          map.0.3[DEQ_PREV] := deqPrev;
+          deqFirst.3[DEQ_PREV] := entry;
+          map.0.3[DEQ_NEXT] := entry;
+          entry.3[DEQ_PREV] := map.0;
+          entry.3[DEQ_NEXT] := deqFirst;
         };
-      } else {
-        parentEntry := entry;
-        shiftingHash >>= HASH_OFFSET;
-        entry := entry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+
+        ?(entry.0, someValue);
       };
+
+      case (_) null;
     };
   };
 
-  public func popFront<K, V>(map: Map<K, V>): (?K, ?V) {
-    var entry = map.0.3[DEQ_NEXT];
-    var shiftingHash = entry.2;
-    var parentEntry = map.0;
+  public func cycleFront<K, V>(map: Map<K, V>): ?(K, V) {
+    let entry = map.0.3[DEQ_NEXT];
 
-    if (shiftingHash == NULL_HASH) return (null, null);
-
-    loop {
-      if (entry.3[DEQ_PREV].2 == NULL_HASH) {
+    switch (entry.1) {
+      case (?someValue) {
         let deqNext = entry.3[DEQ_NEXT];
-        var leaf = entry;
-        var leafParent = parentEntry;
-        var leafIndex = NULL_BRANCH;
 
-        deqNext.3[DEQ_PREV] := map.0;
-        map.0.3[DEQ_NEXT] := deqNext;
-        map.1[SIZE] -%= 1;
+        if (deqNext.2 != NULL_HASH) {
+          let deqLast = map.0.3[DEQ_PREV];
 
-        loop {
-          let branch1 = leaf.3[BRANCH_1];
-
-          if (branch1.2 != NULL_HASH) {
-            leafIndex := BRANCH_1;
-            leafParent := leaf;
-            leaf := branch1;
-          } else {
-            let branch2 = leaf.3[BRANCH_2];
-
-            if (branch2.2 != NULL_HASH) {
-              leafIndex := BRANCH_2;
-              leafParent := leaf;
-              leaf := branch2;
-            } else {
-              let branch3 = leaf.3[BRANCH_3];
-
-              if (branch3.2 != NULL_HASH) {
-                leafIndex := BRANCH_3;
-                leafParent := leaf;
-                leaf := branch3;
-              } else {
-                let branch4 = leaf.3[BRANCH_4];
-
-                if (branch4.2 != NULL_HASH) {
-                  leafIndex := BRANCH_4;
-                  leafParent := leaf;
-                  leaf := branch4;
-                } else if (leafIndex == NULL_BRANCH) {
-                  parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := map.0;
-
-                  return (?entry.0, entry.1);
-                } else {
-                  parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := leaf;
-                  leafParent.3[leafIndex] := map.0;
-
-                  leaf.3[BRANCH_1] := entry.3[BRANCH_1];
-                  leaf.3[BRANCH_2] := entry.3[BRANCH_2];
-                  leaf.3[BRANCH_3] := entry.3[BRANCH_3];
-                  leaf.3[BRANCH_4] := entry.3[BRANCH_4];
-
-                  return (?entry.0, entry.1);
-                };
-              };
-            };
-          };
+          deqNext.3[DEQ_PREV] := map.0;
+          map.0.3[DEQ_NEXT] := deqNext;
+          deqLast.3[DEQ_NEXT] := entry;
+          map.0.3[DEQ_PREV] := entry;
+          entry.3[DEQ_NEXT] := map.0;
+          entry.3[DEQ_PREV] := deqLast;
         };
-      } else {
-        parentEntry := entry;
-        shiftingHash >>= HASH_OFFSET;
-        entry := entry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+
+        ?(entry.0, someValue);
       };
+
+      case (_) null;
     };
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func cycle<K, V>(map: Map<K, V>): (?K, ?V) {
-    let entry = map.0.3[DEQ_PREV];
-
-    if (entry.2 == NULL_HASH) (null, null) else {
-      let deqPrev = entry.3[DEQ_PREV];
-
-      if (deqPrev.2 != NULL_HASH) {
-        let deqFirst = map.0.3[DEQ_NEXT];
-
-        deqPrev.3[DEQ_NEXT] := map.0;
-        map.0.3[DEQ_PREV] := deqPrev;
-        deqFirst.3[DEQ_PREV] := entry;
-        map.0.3[DEQ_NEXT] := entry;
-        entry.3[DEQ_PREV] := map.0;
-        entry.3[DEQ_NEXT] := deqFirst;
-      };
-
-      (?entry.0, entry.1);
-    };
-  };
-
-  public func cycleFront<K, V>(map: Map<K, V>): (?K, ?V) {
-    let entry = map.0.3[DEQ_NEXT];
-
-    if (entry.2 == NULL_HASH) (null, null) else {
-      let deqNext = entry.3[DEQ_NEXT];
-
-      if (deqNext.2 != NULL_HASH) {
-        let deqLast = map.0.3[DEQ_PREV];
-
-        deqNext.3[DEQ_PREV] := map.0;
-        map.0.3[DEQ_NEXT] := deqNext;
-        deqLast.3[DEQ_NEXT] := entry;
-        map.0.3[DEQ_PREV] := entry;
-        entry.3[DEQ_NEXT] := map.0;
-        entry.3[DEQ_PREV] := deqLast;
-      };
-
-      (?entry.0, entry.1);
-    };
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  public func peek<K, V>(map: Map<K, V>): (?K, ?V) {
-    let entry = map.0.3[DEQ_PREV];
-
-    if (entry.2 == NULL_HASH) (null, null) else (?entry.0, entry.1);
-  };
-
-  public func peekFront<K, V>(map: Map<K, V>): (?K, ?V) {
-    let entry = map.0.3[DEQ_NEXT];
-
-    if (entry.2 == NULL_HASH) (null, null) else (?entry.0, entry.1);
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  public func mapFilter<K, V1, V2>(map: Map<K, V1>, fn: (K, V1) -> ?V2): Map<K, V2> {
-    let newEdgeEntry = createEdgeEntry<K, V2>(map.0.0);
+  public func mapFilter<K, V1, V2>(map: Map<K, V1>, mapEntry: (K, V1) -> ?V2): Map<K, V2> {
+    let newEdge = createEdgeEntry<K, V2>(map.0.0);
     var entry = map.0.3[DEQ_NEXT];
-    var deqPrev = newEdgeEntry;
+    var deqPrev = newEdge;
     var newSize = 0:Nat32;
 
     loop {
-      if (entry.2 == NULL_HASH) {
-        newEdgeEntry.3[DEQ_PREV] := deqPrev;
+      switch (entry.1) {
+        case (?someValue) switch (mapEntry(entry.0, someValue)) {
+          case (null) entry := entry.3[DEQ_NEXT];
 
-        return (newEdgeEntry, [var newSize]);
-      } else switch (fn(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") })) {
-        case (null) entry := entry.3[DEQ_NEXT];
+          case (newValue) {
+            var shiftingHash = entry.2;
+            var searchEntry = newEdge.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+            var parentEntry = newEdge;
 
-        case (newValue) {
+            while (searchEntry.2 != NULL_HASH) {
+              parentEntry := searchEntry;
+              shiftingHash >>= HASH_OFFSET;
+              searchEntry := searchEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+            };
+
+            let newEntry = (entry.0, newValue, entry.2, [var newEdge, newEdge, newEdge, newEdge, deqPrev, newEdge]);
+
+            deqPrev.3[DEQ_NEXT] := newEntry;
+            parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+            deqPrev := newEntry;
+            entry := entry.3[DEQ_NEXT];
+            newSize +%= 1;
+          };
+        };
+
+        case (_) {
+          newEdge.3[DEQ_PREV] := deqPrev;
+
+          return (newEdge, [var newSize]);
+        };
+      };
+    };
+  };
+
+  public func mapFilterDesc<K, V1, V2>(map: Map<K, V1>, mapEntry: (K, V1) -> ?V2): Map<K, V2> {
+    let newEdge = createEdgeEntry<K, V2>(map.0.0);
+    var entry = map.0.3[DEQ_PREV];
+    var deqNext = newEdge;
+    var newSize = 0:Nat32;
+
+    loop {
+      switch (entry.1) {
+        case (?someValue) switch (mapEntry(entry.0, someValue)) {
+          case (null) entry := entry.3[DEQ_PREV];
+
+          case (newValue) {
+            var shiftingHash = entry.2;
+            var searchEntry = newEdge.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+            var parentEntry = newEdge;
+
+            while (searchEntry.2 != NULL_HASH) {
+              parentEntry := searchEntry;
+              shiftingHash >>= HASH_OFFSET;
+              searchEntry := searchEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+            };
+
+            let newEntry = (entry.0, newValue, entry.2, [var newEdge, newEdge, newEdge, newEdge, newEdge, deqNext]);
+
+            deqNext.3[DEQ_PREV] := newEntry;
+            parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+            deqNext := newEntry;
+            entry := entry.3[DEQ_PREV];
+            newSize +%= 1;
+          };
+        };
+
+        case (_) {
+          newEdge.3[DEQ_NEXT] := deqNext;
+
+          return (newEdge, [var newSize]);
+        };
+      };
+    };
+  };
+
+  public func map<K, V1, V2>(map: Map<K, V1>, mapEntry: (K, V1) -> V2): Map<K, V2> {
+    let newEdge = createEdgeEntry<K, V2>(map.0.0);
+    var entry = map.0.3[DEQ_NEXT];
+    var deqPrev = newEdge;
+    var newSize = 0:Nat32;
+
+    loop {
+      switch (entry.1) {
+        case (?someValue) {
           var shiftingHash = entry.2;
-          var searchEntry = newEdgeEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
-          var parentEntry = newEdgeEntry;
+          var searchEntry = newEdge.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+          var parentEntry = newEdge;
 
           while (searchEntry.2 != NULL_HASH) {
             parentEntry := searchEntry;
@@ -1191,7 +1369,7 @@ module {
             searchEntry := searchEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
           };
 
-          let newEntry = (entry.0, newValue, entry.2, [var newEdgeEntry, newEdgeEntry, newEdgeEntry, newEdgeEntry, deqPrev, newEdgeEntry]);
+          let newEntry = (entry.0, ?mapEntry(entry.0, someValue), entry.2, [var newEdge, newEdge, newEdge, newEdge, deqPrev, newEdge]);
 
           deqPrev.3[DEQ_NEXT] := newEntry;
           parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
@@ -1199,98 +1377,150 @@ module {
           entry := entry.3[DEQ_NEXT];
           newSize +%= 1;
         };
+
+        case (_) {
+          newEdge.3[DEQ_PREV] := deqPrev;
+
+          return (newEdge, [var newSize]);
+        };
       };
     };
   };
 
-  public func map<K, V1, V2>(map: Map<K, V1>, fn: (K, V1) -> V2): Map<K, V2> {
-    let newEdgeEntry = createEdgeEntry<K, V2>(map.0.0);
-    var entry = map.0.3[DEQ_NEXT];
-    var deqPrev = newEdgeEntry;
+  public func mapDesc<K, V1, V2>(map: Map<K, V1>, mapEntry: (K, V1) -> V2): Map<K, V2> {
+    let newEdge = createEdgeEntry<K, V2>(map.0.0);
+    var entry = map.0.3[DEQ_PREV];
+    var deqNext = newEdge;
     var newSize = 0:Nat32;
 
     loop {
-      if (entry.2 == NULL_HASH) {
-        newEdgeEntry.3[DEQ_PREV] := deqPrev;
+      switch (entry.1) {
+        case (?someValue) {
+          var shiftingHash = entry.2;
+          var searchEntry = newEdge.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+          var parentEntry = newEdge;
 
-        return (newEdgeEntry, [var newSize]);
-      } else {
-        var shiftingHash = entry.2;
-        var searchEntry = newEdgeEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
-        var parentEntry = newEdgeEntry;
+          while (searchEntry.2 != NULL_HASH) {
+            parentEntry := searchEntry;
+            shiftingHash >>= HASH_OFFSET;
+            searchEntry := searchEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+          };
 
-        while (searchEntry.2 != NULL_HASH) {
-          parentEntry := searchEntry;
-          shiftingHash >>= HASH_OFFSET;
-          searchEntry := searchEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+          let newEntry = (entry.0, ?mapEntry(entry.0, someValue), entry.2, [var newEdge, newEdge, newEdge, newEdge, newEdge, deqNext]);
+
+          deqNext.3[DEQ_PREV] := newEntry;
+          parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+          deqNext := newEntry;
+          entry := entry.3[DEQ_PREV];
+          newSize +%= 1;
         };
 
-        let newEntry = (
-          entry.0,
-          ?fn(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") }),
-          entry.2,
-          [var newEdgeEntry, newEdgeEntry, newEdgeEntry, newEdgeEntry, deqPrev, newEdgeEntry],
-        );
+        case (_) {
+          newEdge.3[DEQ_NEXT] := deqNext;
 
-        deqPrev.3[DEQ_NEXT] := newEntry;
-        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
-        deqPrev := newEntry;
-        entry := entry.3[DEQ_NEXT];
-        newSize +%= 1;
+          return (newEdge, [var newSize]);
+        };
       };
     };
   };
 
-  public func filter<K, V>(map: Map<K, V>, fn: (K, V) -> Bool): Map<K, V> {
-    let newEdgeEntry = createEdgeEntry<K, V>(map.0.0);
+  public func filter<K, V>(map: Map<K, V>, acceptEntry: (K, V) -> Bool): Map<K, V> {
+    let newEdge = createEdgeEntry<K, V>(map.0.0);
     var entry = map.0.3[DEQ_NEXT];
-    var deqPrev = newEdgeEntry;
+    var deqPrev = newEdge;
     var newSize = 0:Nat32;
 
     loop {
-      if (entry.2 == NULL_HASH) {
-        newEdgeEntry.3[DEQ_PREV] := deqPrev;
+      switch (entry.1) {
+        case (?someValue) {
+          if (acceptEntry(entry.0, someValue)) {
+            var shiftingHash = entry.2;
+            var searchEntry = newEdge.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+            var parentEntry = newEdge;
 
-        return (newEdgeEntry, [var newSize]);
-      } else if (fn(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") })) {
-        var shiftingHash = entry.2;
-        var searchEntry = newEdgeEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
-        var parentEntry = newEdgeEntry;
+            while (searchEntry.2 != NULL_HASH) {
+              parentEntry := searchEntry;
+              shiftingHash >>= HASH_OFFSET;
+              searchEntry := searchEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+            };
 
-        while (searchEntry.2 != NULL_HASH) {
-          parentEntry := searchEntry;
-          shiftingHash >>= HASH_OFFSET;
-          searchEntry := searchEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+            let newEntry = (entry.0, entry.1, entry.2, [var newEdge, newEdge, newEdge, newEdge, deqPrev, newEdge]);
+
+            deqPrev.3[DEQ_NEXT] := newEntry;
+            parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+            deqPrev := newEntry;
+            entry := entry.3[DEQ_NEXT];
+            newSize +%= 1;
+          } else {
+            entry := entry.3[DEQ_NEXT];
+          };
         };
 
-        let newEntry = (entry.0, entry.1, entry.2, [var newEdgeEntry, newEdgeEntry, newEdgeEntry, newEdgeEntry, deqPrev, newEdgeEntry]);
+        case (_) {
+          newEdge.3[DEQ_PREV] := deqPrev;
 
-        deqPrev.3[DEQ_NEXT] := newEntry;
-        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
-        deqPrev := newEntry;
-        entry := entry.3[DEQ_NEXT];
-        newSize +%= 1;
-      } else {
-        entry := entry.3[DEQ_NEXT];
+          return (newEdge, [var newSize]);
+        };
+      };
+    };
+  };
+
+  public func filterDesc<K, V>(map: Map<K, V>, acceptEntry: (K, V) -> Bool): Map<K, V> {
+    let newEdge = createEdgeEntry<K, V>(map.0.0);
+    var entry = map.0.3[DEQ_PREV];
+    var deqNext = newEdge;
+    var newSize = 0:Nat32;
+
+    loop {
+      switch (entry.1) {
+        case (?someValue) {
+          if (acceptEntry(entry.0, someValue)) {
+            var shiftingHash = entry.2;
+            var searchEntry = newEdge.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+            var parentEntry = newEdge;
+
+            while (searchEntry.2 != NULL_HASH) {
+              parentEntry := searchEntry;
+              shiftingHash >>= HASH_OFFSET;
+              searchEntry := searchEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+            };
+
+            let newEntry = (entry.0, entry.1, entry.2, [var newEdge, newEdge, newEdge, newEdge, newEdge, deqNext]);
+
+            deqNext.3[DEQ_PREV] := newEntry;
+            parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+            deqNext := newEntry;
+            entry := entry.3[DEQ_PREV];
+            newSize +%= 1;
+          } else {
+            entry := entry.3[DEQ_PREV];
+          };
+        };
+
+        case (_) {
+          newEdge.3[DEQ_NEXT] := deqNext;
+
+          return (newEdge, [var newSize]);
+        };
       };
     };
   };
 
   public func clone<K, V>(map: Map<K, V>): Map<K, V> {
-    let newEdgeEntry = createEdgeEntry<K, V>(map.0.0);
+    let newEdge = createEdgeEntry<K, V>(map.0.0);
     var entry = map.0.3[DEQ_NEXT];
-    var deqPrev = newEdgeEntry;
+    var deqPrev = newEdge;
     var newSize = 0:Nat32;
 
     loop {
       if (entry.2 == NULL_HASH) {
-        newEdgeEntry.3[DEQ_PREV] := deqPrev;
+        newEdge.3[DEQ_PREV] := deqPrev;
 
-        return (newEdgeEntry, [var newSize]);
+        return (newEdge, [var newSize]);
       } else {
         var shiftingHash = entry.2;
-        var searchEntry = newEdgeEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
-        var parentEntry = newEdgeEntry;
+        var searchEntry = newEdge.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        var parentEntry = newEdge;
 
         while (searchEntry.2 != NULL_HASH) {
           parentEntry := searchEntry;
@@ -1298,12 +1528,45 @@ module {
           searchEntry := searchEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
         };
 
-        let newEntry = (entry.0, entry.1, entry.2, [var newEdgeEntry, newEdgeEntry, newEdgeEntry, newEdgeEntry, deqPrev, newEdgeEntry]);
+        let newEntry = (entry.0, entry.1, entry.2, [var newEdge, newEdge, newEdge, newEdge, deqPrev, newEdge]);
 
         deqPrev.3[DEQ_NEXT] := newEntry;
         parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
         deqPrev := newEntry;
         entry := entry.3[DEQ_NEXT];
+        newSize +%= 1;
+      };
+    };
+  };
+
+  public func cloneDesc<K, V>(map: Map<K, V>): Map<K, V> {
+    let newEdge = createEdgeEntry<K, V>(map.0.0);
+    var entry = map.0.3[DEQ_PREV];
+    var deqNext = newEdge;
+    var newSize = 0:Nat32;
+
+    loop {
+      if (entry.2 == NULL_HASH) {
+        newEdge.3[DEQ_NEXT] := deqNext;
+
+        return (newEdge, [var newSize]);
+      } else {
+        var shiftingHash = entry.2;
+        var searchEntry = newEdge.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        var parentEntry = newEdge;
+
+        while (searchEntry.2 != NULL_HASH) {
+          parentEntry := searchEntry;
+          shiftingHash >>= HASH_OFFSET;
+          searchEntry := searchEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        };
+
+        let newEntry = (entry.0, entry.1, entry.2, [var newEdge, newEdge, newEdge, newEdge, newEdge, deqNext]);
+
+        deqNext.3[DEQ_PREV] := newEntry;
+        parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+        deqNext := newEntry;
+        entry := entry.3[DEQ_PREV];
         newSize +%= 1;
       };
     };
@@ -1478,17 +1741,17 @@ module {
       prev = func(): ?(K, V) {
         entry := entry.3[DEQ_PREV];
 
-        if (entry.2 == NULL_HASH) null else ?(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") });
+        switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
       };
 
       next = func(): ?(K, V) {
         entry := entry.3[DEQ_NEXT];
 
-        if (entry.2 == NULL_HASH) null else ?(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") });
+        switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
       };
 
       current = func(): ?(K, V) {
-        if (entry.2 == NULL_HASH) null else ?(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") });
+        switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
       };
 
       reset = func(): Iter<(K, V)> {
@@ -1518,17 +1781,17 @@ module {
       prev = func(): ?(K, V) {
         entry := entry.3[DEQ_NEXT];
 
-        if (entry.2 == NULL_HASH) null else ?(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") });
+        switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
       };
 
       next = func(): ?(K, V) {
         entry := entry.3[DEQ_PREV];
 
-        if (entry.2 == NULL_HASH) null else ?(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") });
+        switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
       };
 
       current = func(): ?(K, V) {
-        if (entry.2 == NULL_HASH) null else ?(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") });
+        switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
       };
 
       reset = func(): Iter<(K, V)> {
@@ -1551,11 +1814,10 @@ module {
     };
   };
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   public func keysFrom<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K): Iter<K> {
     let hashParam = hashUtils.0(keyParam);
     var shiftingHash = hashParam;
+
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
 
     loop {
@@ -1603,6 +1865,7 @@ module {
   public func keysFromDesc<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K): Iter<K> {
     let hashParam = hashUtils.0(keyParam);
     var shiftingHash = hashParam;
+
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
 
     loop {
@@ -1650,6 +1913,7 @@ module {
   public func valsFrom<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K): Iter<V> {
     let hashParam = hashUtils.0(keyParam);
     var shiftingHash = hashParam;
+
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
 
     loop {
@@ -1697,6 +1961,7 @@ module {
   public func valsFromDesc<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K): Iter<V> {
     let hashParam = hashUtils.0(keyParam);
     var shiftingHash = hashParam;
+
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
 
     loop {
@@ -1744,6 +2009,7 @@ module {
   public func entriesFrom<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K): Iter<(K, V)> {
     let hashParam = hashUtils.0(keyParam);
     var shiftingHash = hashParam;
+
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
 
     loop {
@@ -1751,17 +2017,17 @@ module {
         prev = func(): ?(K, V) {
           entry := entry.3[DEQ_PREV];
 
-          if (entry.2 == NULL_HASH) null else ?(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") });
+          switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
         };
 
         next = func(): ?(K, V) {
           entry := entry.3[DEQ_NEXT];
 
-          if (entry.2 == NULL_HASH) null else ?(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") });
+          switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
         };
 
         current = func(): ?(K, V) {
-          if (entry.2 == NULL_HASH) null else ?(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") });
+          switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
         };
 
         reset = func(): Iter<(K, V)> {
@@ -1791,6 +2057,7 @@ module {
   public func entriesFromDesc<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K): Iter<(K, V)> {
     let hashParam = hashUtils.0(keyParam);
     var shiftingHash = hashParam;
+
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
 
     loop {
@@ -1798,17 +2065,17 @@ module {
         prev = func(): ?(K, V) {
           entry := entry.3[DEQ_NEXT];
 
-          if (entry.2 == NULL_HASH) null else ?(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") });
+          switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
         };
 
         next = func(): ?(K, V) {
           entry := entry.3[DEQ_PREV];
 
-          if (entry.2 == NULL_HASH) null else ?(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") });
+          switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
         };
 
         current = func(): ?(K, V) {
-          if (entry.2 == NULL_HASH) null else ?(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") });
+          switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
         };
 
         reset = func(): Iter<(K, V)> {
@@ -1837,134 +2104,278 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func forEach<K, V>(map: Map<K, V>, fn: (K, V) -> ()) {
+  public func find<K, V>(map: Map<K, V>, mapEntry: (K, V) -> Bool): ?(K, V) {
     var entry = map.0;
 
     loop {
       entry := entry.3[DEQ_NEXT];
 
-      if (entry.2 == NULL_HASH) return
-      else fn(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") });
+      switch (entry.1) {
+        case (?someValue) if (mapEntry(entry.0, someValue)) return ?(entry.0, someValue);
+        case (_) return null;
+      };
     };
   };
 
-  public func forEachDesc<K, V>(map: Map<K, V>, fn: (K, V) -> ()) {
+  public func findDesc<K, V>(map: Map<K, V>, mapEntry: (K, V) -> Bool): ?(K, V) {
     var entry = map.0;
 
     loop {
       entry := entry.3[DEQ_PREV];
 
-      if (entry.2 == NULL_HASH) return
-      else fn(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") });
+      switch (entry.1) {
+        case (?someValue) if (mapEntry(entry.0, someValue)) return ?(entry.0, someValue);
+        case (_) return null;
+      };
     };
   };
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  public func every<K, V>(map: Map<K, V>, fn: (K, V) -> Bool): Bool {
+  public func some<K, V>(map: Map<K, V>, mapEntry: (K, V) -> Bool): Bool {
     var entry = map.0;
 
     loop {
       entry := entry.3[DEQ_NEXT];
 
-      if (entry.2 == NULL_HASH) return true
-      else if (not fn(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") })) return false;
+      switch (entry.1) {
+        case (?someValue) if (mapEntry(entry.0, someValue)) return true;
+        case (_) return false;
+      };
     };
   };
 
-  public func everyDesc<K, V>(map: Map<K, V>, fn: (K, V) -> Bool): Bool {
+  public func someDesc<K, V>(map: Map<K, V>, mapEntry: (K, V) -> Bool): Bool {
     var entry = map.0;
 
     loop {
       entry := entry.3[DEQ_PREV];
 
-      if (entry.2 == NULL_HASH) return true
-      else if (not fn(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") })) return false;
+      switch (entry.1) {
+        case (?someValue) if (mapEntry(entry.0, someValue)) return true;
+        case (_) return false;
+      };
     };
   };
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  public func some<K, V>(map: Map<K, V>, fn: (K, V) -> Bool): Bool {
+  public func every<K, V>(map: Map<K, V>, mapEntry: (K, V) -> Bool): Bool {
     var entry = map.0;
 
     loop {
       entry := entry.3[DEQ_NEXT];
 
-      if (entry.2 == NULL_HASH) return false
-      else if (fn(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") })) return true;
+      switch (entry.1) {
+        case (?someValue) if (not mapEntry(entry.0, someValue)) return false;
+        case (_) return true;
+      };
     };
   };
 
-  public func someDesc<K, V>(map: Map<K, V>, fn: (K, V) -> Bool): Bool {
+  public func everyDesc<K, V>(map: Map<K, V>, mapEntry: (K, V) -> Bool): Bool {
     var entry = map.0;
 
     loop {
       entry := entry.3[DEQ_PREV];
 
-      if (entry.2 == NULL_HASH) return false
-      else if (fn(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") })) return true;
+      switch (entry.1) {
+        case (?someValue) if (not mapEntry(entry.0, someValue)) return false;
+        case (_) return true;
+      };
     };
   };
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  public func find<K, V>(map: Map<K, V>, fn: (K, V) -> Bool): (?K, ?V) {
+  public func forEach<K, V>(map: Map<K, V>, mapEntry: (K, V) -> ()) {
     var entry = map.0;
 
     loop {
       entry := entry.3[DEQ_NEXT];
 
-      if (entry.2 == NULL_HASH) return (null, null)
-      else if (fn(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") })) return (?entry.0, entry.1);
+      switch (entry.1) {
+        case (?someValue) mapEntry(entry.0, someValue);
+        case (_) return;
+      };
     };
   };
 
-  public func findDesc<K, V>(map: Map<K, V>, fn: (K, V) -> Bool): (?K, ?V) {
+  public func forEachDesc<K, V>(map: Map<K, V>, mapEntry: (K, V) -> ()) {
     var entry = map.0;
 
     loop {
       entry := entry.3[DEQ_PREV];
 
-      if (entry.2 == NULL_HASH) return (null, null)
-      else if (fn(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") })) return (?entry.0, entry.1);
+      switch (entry.1) {
+        case (?someValue) mapEntry(entry.0, someValue);
+        case (_) return;
+      };
     };
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public func fromIter<K, V>(iter: IterNative<(K, V)>, hashUtils: HashUtils<K>): Map<K, V> {
-    let newMap = new<K, V>(hashUtils);
+  public func fromIter<K, V>(iter: IterNext<(K, V)>, hashUtils: HashUtils<K>): Map<K, V> {
+    let map = (createEdgeEntry<K, V>(hashUtils.2()), [var 0:Nat32]);
 
-    for (item in iter) set(newMap, hashUtils, item.0, item.1);
+    label fromIterLoop for (item in iter) {
+      let hashParam = hashUtils.0(item.0);
+      var shiftingHash = hashParam;
+      var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+      var parentEntry = map.0;
 
-    newMap;
+      loop {
+        if (entry.2 == NULL_HASH) {
+          let deqPrev = map.0.3[DEQ_PREV];
+          let newEntry = (item.0, ?item.1, hashParam, [var map.0, map.0, map.0, map.0, deqPrev, map.0]);
+
+          deqPrev.3[DEQ_NEXT] := newEntry;
+          map.0.3[DEQ_PREV] := newEntry;
+          parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+          map.1[SIZE] +%= 1;
+
+          continue fromIterLoop;
+        } else if (entry.2 == hashParam and hashUtils.1(entry.0, item.0)) {
+          let newEntry = (entry.0, ?item.1, entry.2, entry.3);
+
+          entry.3[DEQ_PREV].3[DEQ_NEXT] := newEntry;
+          entry.3[DEQ_NEXT].3[DEQ_PREV] := newEntry;
+
+          parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+
+          continue fromIterLoop;
+        } else {
+          parentEntry := entry;
+          shiftingHash >>= HASH_OFFSET;
+          entry := entry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        };
+      };
+    };
+
+    map;
   };
 
-  public func fromIterDesc<K, V>(iter: IterNative<(K, V)>, hashUtils: HashUtils<K>): Map<K, V> {
-    let newMap = new<K, V>(hashUtils);
+  public func fromIterDesc<K, V>(iter: IterNext<(K, V)>, hashUtils: HashUtils<K>): Map<K, V> {
+    let map = (createEdgeEntry<K, V>(hashUtils.2()), [var 0:Nat32]);
 
-    for (item in iter) setFront(newMap, hashUtils, item.0, item.1);
+    label fromIterLoop for (item in iter) {
+      let hashParam = hashUtils.0(item.0);
+      var shiftingHash = hashParam;
+      var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+      var parentEntry = map.0;
 
-    newMap;
+      loop {
+        if (entry.2 == NULL_HASH) {
+          let deqNext = map.0.3[DEQ_NEXT];
+          let newEntry = (item.0, ?item.1, hashParam, [var map.0, map.0, map.0, map.0, map.0, deqNext]);
+
+          deqNext.3[DEQ_PREV] := newEntry;
+          map.0.3[DEQ_NEXT] := newEntry;
+          parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+          map.1[SIZE] +%= 1;
+
+          continue fromIterLoop;
+        } else if (entry.2 == hashParam and hashUtils.1(entry.0, item.0)) {
+          let newEntry = (entry.0, ?item.1, entry.2, entry.3);
+
+          entry.3[DEQ_NEXT].3[DEQ_PREV] := newEntry;
+          entry.3[DEQ_PREV].3[DEQ_NEXT] := newEntry;
+
+          parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+
+          continue fromIterLoop;
+        } else {
+          parentEntry := entry;
+          shiftingHash >>= HASH_OFFSET;
+          entry := entry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        };
+      };
+    };
+
+    map;
   };
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  public func fromIterMap<K, V, T>(iter: IterNext<T>, hashUtils: HashUtils<K>, mapItem: (T) -> ?(K, V)): Map<K, V> {
+    let map = (createEdgeEntry<K, V>(hashUtils.2()), [var 0:Nat32]);
 
-  public func fromIterMap<K, V, T>(iter: IterNative<T>, hashUtils: HashUtils<K>, fn: (T) -> (?K, ?V)): Map<K, V> {
-    let newMap = new<K, V>(hashUtils);
+    label fromIterLoop for (item in iter) switch (mapItem(item)) {
+      case (?item) {
+        let hashParam = hashUtils.0(item.0);
+        var shiftingHash = hashParam;
+        var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        var parentEntry = map.0;
 
-    for (item in iter) switch (fn(item)) { case (?key, ?value) set(newMap, hashUtils, key, value); case (_) {} };
+        loop {
+          if (entry.2 == NULL_HASH) {
+            let deqPrev = map.0.3[DEQ_PREV];
+            let newEntry = (item.0, ?item.1, hashParam, [var map.0, map.0, map.0, map.0, deqPrev, map.0]);
 
-    newMap;
+            deqPrev.3[DEQ_NEXT] := newEntry;
+            map.0.3[DEQ_PREV] := newEntry;
+            parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+            map.1[SIZE] +%= 1;
+
+            continue fromIterLoop;
+          } else if (entry.2 == hashParam and hashUtils.1(entry.0, item.0)) {
+            let newEntry = (entry.0, ?item.1, entry.2, entry.3);
+
+            entry.3[DEQ_PREV].3[DEQ_NEXT] := newEntry;
+            entry.3[DEQ_NEXT].3[DEQ_PREV] := newEntry;
+
+            parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+
+            continue fromIterLoop;
+          } else {
+            parentEntry := entry;
+            shiftingHash >>= HASH_OFFSET;
+            entry := entry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+          };
+        };
+      };
+
+      case (_) {};
+    };
+
+    map;
   };
 
-  public func fromIterMapDesc<K, V, T>(iter: IterNative<T>, hashUtils: HashUtils<K>, fn: (T) -> (?K, ?V)): Map<K, V> {
-    let newMap = new<K, V>(hashUtils);
+  public func fromIterMapDesc<K, V, T>(iter: IterNext<T>, hashUtils: HashUtils<K>, mapItem: (T) -> ?(K, V)): Map<K, V> {
+    let map = (createEdgeEntry<K, V>(hashUtils.2()), [var 0:Nat32]);
 
-    for (item in iter) switch (fn(item)) { case (?key, ?value) setFront(newMap, hashUtils, key, value); case (_) {} };
+    label fromIterLoop for (item in iter) switch (mapItem(item)) {
+      case (?item) {
+        let hashParam = hashUtils.0(item.0);
+        var shiftingHash = hashParam;
+        var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+        var parentEntry = map.0;
 
-    newMap;
+        loop {
+          if (entry.2 == NULL_HASH) {
+            let deqNext = map.0.3[DEQ_NEXT];
+            let newEntry = (item.0, ?item.1, hashParam, [var map.0, map.0, map.0, map.0, map.0, deqNext]);
+
+            deqNext.3[DEQ_PREV] := newEntry;
+            map.0.3[DEQ_NEXT] := newEntry;
+            parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+            map.1[SIZE] +%= 1;
+
+            continue fromIterLoop;
+          } else if (entry.2 == hashParam and hashUtils.1(entry.0, item.0)) {
+            let newEntry = (entry.0, ?item.1, entry.2, entry.3);
+
+            entry.3[DEQ_NEXT].3[DEQ_PREV] := newEntry;
+            entry.3[DEQ_PREV].3[DEQ_NEXT] := newEntry;
+
+            parentEntry.3[nat(shiftingHash % HASH_CHUNK_SIZE)] := newEntry;
+
+            continue fromIterLoop;
+          } else {
+            parentEntry := entry;
+            shiftingHash >>= HASH_OFFSET;
+            entry := entry.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
+          };
+        };
+      };
+
+      case (_) {};
+    };
+
+    map;
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1975,7 +2386,7 @@ module {
     tabulateArray<(K, V)>(nat(map.1[SIZE]), func(i) {
       entry := entry.3[DEQ_NEXT];
 
-      (entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") });
+      (entry.0, switch (entry.1) { case (?value) value; case (_) noop() });
     });
   };
 
@@ -1985,48 +2396,54 @@ module {
     tabulateArray<(K, V)>(nat(map.1[SIZE]), func(i) {
       entry := entry.3[DEQ_PREV];
 
-      (entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") });
+      (entry.0, switch (entry.1) { case (?value) value; case (_) noop() });
     });
   };
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  public func toArrayMap<K, V, T>(map: Map<K, V>, fn: (K, V) -> ?T): [T] {
+  public func toArrayMap<K, V, T>(map: Map<K, V>, mapEntry: (K, V) -> ?T): [T] {
     let array = initArray<?T>(nat(map.1[SIZE]), null);
+
     var entry = map.0.3[DEQ_NEXT];
+
     var arraySize = 0:Nat32;
 
     loop {
-      if (entry.2 == NULL_HASH)
-      return tabulateArray<T>(nat(arraySize), func(i) = switch (array[i]) { case (?value) value; case (_) trap("unreachable") })
-      else switch (fn(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") })) {
-        case (null) entry := entry.3[DEQ_NEXT];
+      switch (entry.1) {
+        case (?someValue) switch (mapEntry(entry.0, someValue)) {
+          case (null) entry := entry.3[DEQ_NEXT];
 
-        case (item) {
-          array[nat(arraySize)] := item;
-          entry := entry.3[DEQ_NEXT];
-          arraySize +%= 1;
+          case (item) {
+            array[nat(arraySize)] := item;
+            entry := entry.3[DEQ_NEXT];
+            arraySize +%= 1;
+          };
         };
+
+        case (_) return tabulateArray<T>(nat(arraySize), func(i) = switch (array[i]) { case (?value) value; case (_) noop() });
       };
     };
   };
 
-  public func toArrayMapDesc<K, V, T>(map: Map<K, V>, fn: (K, V) -> ?T): [T] {
+  public func toArrayMapDesc<K, V, T>(map: Map<K, V>, mapEntry: (K, V) -> ?T): [T] {
     let array = initArray<?T>(nat(map.1[SIZE]), null);
+
     var entry = map.0.3[DEQ_PREV];
+
     var arraySize = 0:Nat32;
 
     loop {
-      if (entry.2 == NULL_HASH)
-      return tabulateArray<T>(nat(arraySize), func(i) = switch (array[i]) { case (?value) value; case (_) trap("unreachable") })
-      else switch (fn(entry.0, switch (entry.1) { case (?value) value; case (_) trap("unreachable") })) {
-        case (null) entry := entry.3[DEQ_PREV];
+      switch (entry.1) {
+        case (?someValue) switch (mapEntry(entry.0, someValue)) {
+          case (null) entry := entry.3[DEQ_PREV];
 
-        case (item) {
-          array[nat(arraySize)] := item;
-          entry := entry.3[DEQ_PREV];
-          arraySize +%= 1;
+          case (item) {
+            array[nat(arraySize)] := item;
+            entry := entry.3[DEQ_PREV];
+            arraySize +%= 1;
+          };
         };
+
+        case (_) return tabulateArray<T>(nat(arraySize), func(i) = switch (array[i]) { case (?value) value; case (_) noop() });
       };
     };
   };
@@ -2060,27 +2477,27 @@ module {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public let ihash: HashUtils<Int> = (hashInt, func(a, b) { a == b }, func() { 0 });
+  public let ihash: HashUtils<Int> = (hashInt, func(a, b) = a == b, func() = 0);
 
-  public let nhash: HashUtils<Nat> = (hashInt, func(a, b) { a == b }, func() { 0 });
+  public let nhash: HashUtils<Nat> = (hashInt, func(a, b) = a == b, func() = 0);
 
-  public let thash: HashUtils<Text> = (hashText, func(a, b) { a == b }, func() { "" });
+  public let thash: HashUtils<Text> = (hashText, func(a, b) = a == b, func() = "");
 
-  public let phash: HashUtils<Principal> = (hashPrincipal, func(a, b) { a == b }, func() { Prim.principalOfBlob("") });
+  public let phash: HashUtils<Principal> = (hashPrincipal, func(a, b) = a == b, func() = Prim.principalOfBlob(""));
 
-  public let bhash: HashUtils<Blob> = (hashBlob, func(a, b) { a == b }, func() { "" });
+  public let bhash: HashUtils<Blob> = (hashBlob, func(a, b) = a == b, func() = "");
 
-  public let lhash: HashUtils<Bool> = (hashBool, func(a, b) { true }, func() { false });
+  public let lhash: HashUtils<Bool> = (hashBool, func(a, b) = true, func() = false);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func useHash<K>(hashUtils: HashUtils<K>, hash: Nat32): HashUtils<K> {
-    (func(key) { hash }, hashUtils.1, hashUtils.2);
+    (func(key) = hash, hashUtils.1, hashUtils.2);
   };
 
   public func calcHash<K>(hashUtils: HashUtils<K>, key: K): HashUtils<K> {
     let hash = hashUtils.0(key);
 
-    (func(key) { hash }, hashUtils.1, hashUtils.2);
+    (func(key) = hash, hashUtils.1, hashUtils.2);
   };
 };
