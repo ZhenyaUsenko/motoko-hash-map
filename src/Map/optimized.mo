@@ -1821,39 +1821,41 @@ module {
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
 
     loop {
-      if (entry.2 == NULL_HASH or entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) return let iter = {
-        prev = func(): ?K {
-          entry := entry.3[DEQ_PREV];
+      if (entry.2 == NULL_HASH or entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
+        return let iter = {
+          prev = func(): ?K {
+            entry := entry.3[DEQ_PREV];
 
-          if (entry.2 == NULL_HASH) null else ?entry.0;
-        };
+            if (entry.2 == NULL_HASH) null else ?entry.0;
+          };
 
-        next = func(): ?K {
-          entry := entry.3[DEQ_NEXT];
+          next = func(): ?K {
+            entry := entry.3[DEQ_NEXT];
 
-          if (entry.2 == NULL_HASH) null else ?entry.0;
-        };
+            if (entry.2 == NULL_HASH) null else ?entry.0;
+          };
 
-        current = func(): ?K {
-          if (entry.2 == NULL_HASH) null else ?entry.0;
-        };
+          current = func(): ?K {
+            if (entry.2 == NULL_HASH) null else ?entry.0;
+          };
 
-        reset = func(): Iter<K> {
-          entry := map.0;
+          reset = func(): Iter<K> {
+            entry := map.0;
 
-          iter;
-        };
+            iter;
+          };
 
-        movePrev = func(): Iter<K> {
-          entry := entry.3[DEQ_PREV];
+          movePrev = func(): Iter<K> {
+            entry := entry.3[DEQ_PREV];
 
-          iter;
-        };
+            iter;
+          };
 
-        moveNext = func(): Iter<K> {
-          entry := entry.3[DEQ_NEXT];
+          moveNext = func(): Iter<K> {
+            entry := entry.3[DEQ_NEXT];
 
-          iter;
+            iter;
+          };
         };
       } else {
         shiftingHash >>= HASH_OFFSET;
@@ -1869,39 +1871,41 @@ module {
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
 
     loop {
-      if (entry.2 == NULL_HASH or entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) return let iter = {
-        prev = func(): ?K {
-          entry := entry.3[DEQ_NEXT];
+      if (entry.2 == NULL_HASH or entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
+        return let iter = {
+          prev = func(): ?K {
+            entry := entry.3[DEQ_NEXT];
 
-          if (entry.2 == NULL_HASH) null else ?entry.0;
-        };
+            if (entry.2 == NULL_HASH) null else ?entry.0;
+          };
 
-        next = func(): ?K {
-          entry := entry.3[DEQ_PREV];
+          next = func(): ?K {
+            entry := entry.3[DEQ_PREV];
 
-          if (entry.2 == NULL_HASH) null else ?entry.0;
-        };
+            if (entry.2 == NULL_HASH) null else ?entry.0;
+          };
 
-        current = func(): ?K {
-          if (entry.2 == NULL_HASH) null else ?entry.0;
-        };
+          current = func(): ?K {
+            if (entry.2 == NULL_HASH) null else ?entry.0;
+          };
 
-        reset = func(): Iter<K> {
-          entry := map.0;
+          reset = func(): Iter<K> {
+            entry := map.0;
 
-          iter;
-        };
+            iter;
+          };
 
-        movePrev = func(): Iter<K> {
-          entry := entry.3[DEQ_NEXT];
+          movePrev = func(): Iter<K> {
+            entry := entry.3[DEQ_NEXT];
 
-          iter;
-        };
+            iter;
+          };
 
-        moveNext = func(): Iter<K> {
-          entry := entry.3[DEQ_PREV];
+          moveNext = func(): Iter<K> {
+            entry := entry.3[DEQ_PREV];
 
-          iter;
+            iter;
+          };
         };
       } else {
         shiftingHash >>= HASH_OFFSET;
@@ -1917,39 +1921,41 @@ module {
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
 
     loop {
-      if (entry.2 == NULL_HASH or entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) return let iter = {
-        prev = func(): ?V {
-          entry := entry.3[DEQ_PREV];
+      if (entry.2 == NULL_HASH or entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
+        return let iter = {
+          prev = func(): ?V {
+            entry := entry.3[DEQ_PREV];
 
-          if (entry.2 == NULL_HASH) null else entry.1;
-        };
+            if (entry.2 == NULL_HASH) null else entry.1;
+          };
 
-        next = func(): ?V {
-          entry := entry.3[DEQ_NEXT];
+          next = func(): ?V {
+            entry := entry.3[DEQ_NEXT];
 
-          if (entry.2 == NULL_HASH) null else entry.1;
-        };
+            if (entry.2 == NULL_HASH) null else entry.1;
+          };
 
-        current = func(): ?V {
-          if (entry.2 == NULL_HASH) null else entry.1;
-        };
+          current = func(): ?V {
+            if (entry.2 == NULL_HASH) null else entry.1;
+          };
 
-        reset = func(): Iter<V> {
-          entry := map.0;
+          reset = func(): Iter<V> {
+            entry := map.0;
 
-          iter;
-        };
+            iter;
+          };
 
-        movePrev = func(): Iter<V> {
-          entry := entry.3[DEQ_PREV];
+          movePrev = func(): Iter<V> {
+            entry := entry.3[DEQ_PREV];
 
-          iter;
-        };
+            iter;
+          };
 
-        moveNext = func(): Iter<V> {
-          entry := entry.3[DEQ_NEXT];
+          moveNext = func(): Iter<V> {
+            entry := entry.3[DEQ_NEXT];
 
-          iter;
+            iter;
+          };
         };
       } else {
         shiftingHash >>= HASH_OFFSET;
@@ -1965,39 +1971,41 @@ module {
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
 
     loop {
-      if (entry.2 == NULL_HASH or entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) return let iter = {
-        prev = func(): ?V {
-          entry := entry.3[DEQ_NEXT];
+      if (entry.2 == NULL_HASH or entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
+        return let iter = {
+          prev = func(): ?V {
+            entry := entry.3[DEQ_NEXT];
 
-          if (entry.2 == NULL_HASH) null else entry.1;
-        };
+            if (entry.2 == NULL_HASH) null else entry.1;
+          };
 
-        next = func(): ?V {
-          entry := entry.3[DEQ_PREV];
+          next = func(): ?V {
+            entry := entry.3[DEQ_PREV];
 
-          if (entry.2 == NULL_HASH) null else entry.1;
-        };
+            if (entry.2 == NULL_HASH) null else entry.1;
+          };
 
-        current = func(): ?V {
-          if (entry.2 == NULL_HASH) null else entry.1;
-        };
+          current = func(): ?V {
+            if (entry.2 == NULL_HASH) null else entry.1;
+          };
 
-        reset = func(): Iter<V> {
-          entry := map.0;
+          reset = func(): Iter<V> {
+            entry := map.0;
 
-          iter;
-        };
+            iter;
+          };
 
-        movePrev = func(): Iter<V> {
-          entry := entry.3[DEQ_NEXT];
+          movePrev = func(): Iter<V> {
+            entry := entry.3[DEQ_NEXT];
 
-          iter;
-        };
+            iter;
+          };
 
-        moveNext = func(): Iter<V> {
-          entry := entry.3[DEQ_PREV];
+          moveNext = func(): Iter<V> {
+            entry := entry.3[DEQ_PREV];
 
-          iter;
+            iter;
+          };
         };
       } else {
         shiftingHash >>= HASH_OFFSET;
@@ -2013,39 +2021,41 @@ module {
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
 
     loop {
-      if (entry.2 == NULL_HASH or entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) return let iter = {
-        prev = func(): ?(K, V) {
-          entry := entry.3[DEQ_PREV];
+      if (entry.2 == NULL_HASH or entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
+        return let iter = {
+          prev = func(): ?(K, V) {
+            entry := entry.3[DEQ_PREV];
 
-          switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
-        };
+            switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
+          };
 
-        next = func(): ?(K, V) {
-          entry := entry.3[DEQ_NEXT];
+          next = func(): ?(K, V) {
+            entry := entry.3[DEQ_NEXT];
 
-          switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
-        };
+            switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
+          };
 
-        current = func(): ?(K, V) {
-          switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
-        };
+          current = func(): ?(K, V) {
+            switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
+          };
 
-        reset = func(): Iter<(K, V)> {
-          entry := map.0;
+          reset = func(): Iter<(K, V)> {
+            entry := map.0;
 
-          iter;
-        };
+            iter;
+          };
 
-        movePrev = func(): Iter<(K, V)> {
-          entry := entry.3[DEQ_PREV];
+          movePrev = func(): Iter<(K, V)> {
+            entry := entry.3[DEQ_PREV];
 
-          iter;
-        };
+            iter;
+          };
 
-        moveNext = func(): Iter<(K, V)> {
-          entry := entry.3[DEQ_NEXT];
+          moveNext = func(): Iter<(K, V)> {
+            entry := entry.3[DEQ_NEXT];
 
-          iter;
+            iter;
+          };
         };
       } else {
         shiftingHash >>= HASH_OFFSET;
@@ -2061,39 +2071,41 @@ module {
     var entry = map.0.3[nat(shiftingHash % HASH_CHUNK_SIZE)];
 
     loop {
-      if (entry.2 == NULL_HASH or entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) return let iter = {
-        prev = func(): ?(K, V) {
-          entry := entry.3[DEQ_NEXT];
+      if (entry.2 == NULL_HASH or entry.2 == hashParam and hashUtils.1(entry.0, keyParam)) {
+        return let iter = {
+          prev = func(): ?(K, V) {
+            entry := entry.3[DEQ_NEXT];
 
-          switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
-        };
+            switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
+          };
 
-        next = func(): ?(K, V) {
-          entry := entry.3[DEQ_PREV];
+          next = func(): ?(K, V) {
+            entry := entry.3[DEQ_PREV];
 
-          switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
-        };
+            switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
+          };
 
-        current = func(): ?(K, V) {
-          switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
-        };
+          current = func(): ?(K, V) {
+            switch (entry.1) { case (?someValue) ?(entry.0, someValue); case (_) null };
+          };
 
-        reset = func(): Iter<(K, V)> {
-          entry := map.0;
+          reset = func(): Iter<(K, V)> {
+            entry := map.0;
 
-          iter;
-        };
+            iter;
+          };
 
-        movePrev = func(): Iter<(K, V)> {
-          entry := entry.3[DEQ_NEXT];
+          movePrev = func(): Iter<(K, V)> {
+            entry := entry.3[DEQ_NEXT];
 
-          iter;
-        };
+            iter;
+          };
 
-        moveNext = func(): Iter<(K, V)> {
-          entry := entry.3[DEQ_PREV];
+          moveNext = func(): Iter<(K, V)> {
+            entry := entry.3[DEQ_PREV];
 
-          iter;
+            iter;
+          };
         };
       } else {
         shiftingHash >>= HASH_OFFSET;
