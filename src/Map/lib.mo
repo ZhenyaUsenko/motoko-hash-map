@@ -11,23 +11,41 @@ module {
 
   public type HashUtils<K> = Map.HashUtils<K>;
 
-  public let { hashInt; hashText; hashPrincipal; hashBlob; hashBool } = Map;
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public let { ihash; nhash; thash; phash; bhash; lhash; useHash; calcHash } = Map;
+  public let { hashInt; hashInt8; hashInt16; hashInt32; hashInt64 } = Map;
 
-  public let { new; clear; size } = Map;
+  public let { hashNat; hashNat8; hashNat16; hashNat32; hashNat64 } = Map;
+
+  public let { hashText; hashPrincipal; hashBlob; hashBool } = Map;
+
+  public let { ihash; i8hash; i16hash; i32hash; i64hash } = Map;
+
+  public let { nhash; n8hash; n16hash; n32hash; n64hash } = Map;
+
+  public let { thash; phash; bhash; lhash } = Map;
+
+  public let { useHash; calcHash } = Map;
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  public let { new; clear } = Map;
+
+  public let { size; empty } = Map;
+
+  public let { peek; peekFront } = Map;
 
   public let { get; has } = Map;
 
-  public let { put; putFront; set; setFront; putMove; putMoveFront; setMove; setMoveFront } = Map;
+  public let { put; putFront; set; setFront; add; addFront; replace; update; updateFront } = Map;
 
-  public let { putBefore; putAfter; setBefore; setAfter; update; updateFront; updateMove; updateMoveFront } = Map;
+  public let { putMove; putMoveFront; replaceMove; replaceMoveFront; updateMove; updateMoveFront; putBefore; putAfter } = Map;
 
-  public let { remove; delete; pop; popFront } = Map;
+  public let { remove; delete; pop; popFront; cycle; cycleFront } = Map;
 
-  public let { peek; peekFront; cycle; cycleFront } = Map;
+  public let { mapFilter; mapFilterDesc; map; mapDesc; filter; filterDesc } = Map;
 
-  public let { mapFilter; mapFilterDesc; map; mapDesc; filter; filterDesc; clone; cloneDesc } = Map;
+  public let { clone; cloneDesc } = Map;
 
   public let { keys; keysDesc; vals; valsDesc; entries; entriesDesc } = Map;
 
@@ -37,5 +55,7 @@ module {
 
   public let { fromIter; fromIterDesc; fromIterMap; fromIterMapDesc } = Map;
 
-  public let { toArray; toArrayDesc; toArrayMap; toArrayMapDesc } = Map;
+  public let { toArray; toArrayDesc } = Map;
+
+  public let { toArrayMap; toArrayMapDesc } = Map;
 };

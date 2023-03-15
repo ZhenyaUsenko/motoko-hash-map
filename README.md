@@ -37,11 +37,11 @@ for (key in Map.keys(map1)) {};
 for (value in Map.vals(map1)) {};
 for ((key, value) in Map.entries(map1)) {};
 
-let map5 = Map.filter<Int, Nat>(map2, func(key, value) { key != 1 });
+let map5 = Map.filter<Int, Nat>(map2, ihash, func(key, value) { key != 1 });
 
-let map6 = Map.map<Nat, Nat, Text>(map1, func(key, value) { Nat.toText(value) });
+let map6 = Map.map<Nat, Nat, Text>(map1, nhash, func(key, value) { Nat.toText(value) });
 
-let map7 = Map.mapFilter<Nat, Nat, Text>(map1, func(key, value) { if (key != 1) ?Nat.toText(value) else null });
+let map7 = Map.mapFilter<Nat, Nat, Text>(map1, nhash, func(key, value) { if (key != 1) ?Nat.toText(value) else null });
 
 let iter = Iter.map<Nat, (Nat, Nat)>(Iter.fromArray([]), func(value) { (value, value) });
 

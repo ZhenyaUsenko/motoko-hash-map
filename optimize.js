@@ -38,9 +38,19 @@ let getBody = (string, startPosition, options = {}) => {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-let adjustIndent = (body, offset) => body.replace(/(?<=(^|\n)) +/g, space => ' '.repeat(space.length + offset))
+let capitalize = (string) => string.charAt(0).toUpperCase() + string.slice(1)
 
-let getIndent = (offset, indent = '') => ' '.repeat(indent.length + offset)
+let changeDirection = (body) => {
+  body = body.replace(/(DEQ_PREV|DEQ_NEXT)/g, (item) => item === 'DEQ_PREV' ? 'DEQ_NEXT' : 'DEQ_PREV')
+
+  body = body.replace(/(deqPrev|deqNext)/g, (item) => item === 'deqPrev' ? 'deqNext' : 'deqPrev')
+
+  body = body.replace(/(newDeqPrev|newDeqNext)/g, (item) => item === 'newDeqPrev' ? 'newDeqNext' : 'newDeqPrev')
+
+  body = body.replace(/(deqFirst|deqLast)/g, (item) => item === 'deqFirst' ? 'deqLast' : 'deqFirst')
+
+  return body
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -48,7 +58,7 @@ let utilsBody = getBody(utils, /\bmodule\b/).replace(/(\S) {2,}/g, '$1 ')
 
 let utilsTypes = getBody(utilsBody, / +public type HashUtils/, { delimLeft: '(', delimRight: ')' })
 
-let utilsMethods = getBody(utilsBody, / +public func/, { bodyStarted: true, bodyOnly: true })
+let utilsMethods = getBody(utilsBody, / +func hashNat32Helper/, { bodyStarted: true, bodyOnly: true })
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -59,7 +69,7 @@ for (let [struct, type, path] of structs) {
 
   optimizedStruct = optimizedStruct.replace(/(\S) {2,}/g, '$1 ')
 
-  optimizedStruct = optimizedStruct.replace(/};\s*$/, `\n${getIndent(2)}${'/'.repeat(148)}\n\n${utilsMethods}\n};\n`)
+  optimizedStruct = optimizedStruct.replace(/};\s*$/, `\n${'/'.repeat(148)}\n\n${utilsMethods}\n};\n`)
 
   optimizedStruct = optimizedStruct.replace(/ +public type HashUtils[^;]+;/, `${utilsTypes};`)
 
@@ -67,7 +77,21 @@ for (let [struct, type, path] of structs) {
 
   optimizedStruct = optimizedStruct.replace(/public let {[^}]+} = Utils;/g, '')
 
+  optimizedStruct = optimizedStruct.replace(/arg1: Any, arg2: Any/, '')
+
+  optimizedStruct = optimizedStruct.replace(/let (nullHash|MOVE|REMOVE|POP|CYCLE|(PUT|ADD|UPDATE|REPLACE)(_MOVE)?) =[^;]+;\n/g, '')
+
   let structWithUtils = optimizedStruct
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  let linksKey = type === 'map' ? '3' : '2'
+
+  let hashKey = type === 'map' ? '2' : '1'
+
+  let checkRemoved = `links[BRANCH_1].${hashKey} != hash or links[BRANCH_2].${hashKey} != hash`
+
+  let checkRemovedVar = `links[BRANCH_1].${hashKey} != hashVar or links[BRANCH_2].${hashKey} != hashVar`
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -89,10 +113,75 @@ for (let [struct, type, path] of structs) {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    if (/^(isSome|unwrap|tempHashUtils)$|Helper$/.test(methodName)) {
+    if (/^(constant|isSome|negate|reject|makeOption|boolToOption|unwrap|rootKey|entryValue|getSibling)$|Helper$/.test(methodName)) {
       optimizedStruct = optimizedStruct.replace(methodBody, '')
 
       continue
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    if (/^(createRoot|clear)$/.test(methodName)) {
+      let isClear = methodName.startsWith('clear')
+
+      let linksReplaceBody = ''
+
+      for (let i = 1; i <= 6; i++) {
+        linksReplaceBody = `${linksReplaceBody}rootLinksVar[${i === 5 ? 'DEQ_PREV' : i === 6 ? 'DEQ_NEXT' : `BRANCH_${i}`}] := rootVar;\n`
+      }
+
+      if (!isClear) {
+        let newRootReplaceBody = '\nlet rootLinksVar = $2;\n\nlet rootVar = ($1, rootLinksVar);'
+
+        newMethodBody = newMethodBody.replace(/let root = \((\w+, \w+(?:, \w+)?), ([^;]+)\);/, newRootReplaceBody)
+
+        newMethodBody = newMethodBody.replace(/for \(index in root[^;]+;/, linksReplaceBody)
+
+        newMethodBody = newMethodBody.replace(/return root;/, 'return rootVar;')
+      }
+
+      if (isClear) {
+        let linkVars = `let rootVar = root;\nlet rootLinksVar = rootVar.${linksKey};\n\n`
+
+        newMethodBody = newMethodBody.replace(/for \(index in root[^;]+;/, `${linkVars}${linksReplaceBody}`)
+      }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    if (/^cloneEntry?$/.test(methodName)) {
+      let branchVars = ''
+      let branchList = ''
+
+      for (let i = 1; i <= 4; i++) branchVars = `${branchVars}let branch${i} = linksVar[BRANCH_${i}];\n`
+
+      for (let i = 1; i <= 4; i++) branchList = `${branchList}if (branch${i}.${hashKey} != ROOT) cloneEntry(branch${i}, newRoot) else newRoot,\n`
+
+      let valueParam = type === 'map' ? ', value' : ''
+
+      let newMethodReplaceBody = `\nlet linksVar = links;\n${branchVars}`
+
+      newMethodReplaceBody = `${newMethodReplaceBody}\nlet newEntry = (key${valueParam}, hash, [\nvar ${branchList}newRoot,\nnewRoot,\n]);`
+
+      newMethodReplaceBody = `${newMethodReplaceBody}\n\nlinksVar[TEMP_LINK] := newEntry;\n\nnewEntry;\n`
+
+      newMethodBody = newMethodBody.replace(methodBodyOnly, newMethodReplaceBody)
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    if (/^peek(Front)?$/.test(methodName)) {
+      if (type === 'map') {
+        let peekBody = `\nlet entry = map.0.3[DEQ_PREV];\n\nswitch (value) { case (?someValue) ?(key, someValue); case (_) null };\n`
+
+        newMethodBody = newMethodBody.replace(methodBodyOnly, peekBody)
+      }
+
+      if (type === 'set') {
+        let peekBody = `\nlet entry = map.0.2[DEQ_PREV];\n\nif (hash == ROOT) null else ?key;\n`
+
+        newMethodBody = newMethodBody.replace(methodBodyOnly, peekBody)
+      }
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -102,6 +191,8 @@ for (let [struct, type, path] of structs) {
 
       newMethodBody = newMethodBody.replace(methodBodyOnly, methods.getHelper)
 
+      newMethodBody = newMethodBody.replace(/\bhash\b/g, 'hashVar').replace(/(if \(hash)/, 'let hashVar = hash;\n\n$1')
+
       if (isHas && type === 'map') {
         newMethodBody = newMethodBody.replace(/return (null|value)/g, (item) => `return ${item.endsWith('value') ? 'true' : 'false'}`)
       }
@@ -109,268 +200,429 @@ for (let [struct, type, path] of structs) {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    if (/^(set|add|put|update)(Move)?(Front|Before|After)?$/.test(methodName)) {
+    if (/^(put|set|add|replace|update)(Move)?(Front|Before|After)?$/.test(methodName)) {
       let isFront = methodName.endsWith('Front') || methodName.endsWith('After')
-      let isSet = methodName.startsWith('set') || methodName.startsWith('add')
+      let isPut = methodName.startsWith('put')
+      let isSet = methodName.startsWith('set')
+      let isAdd = methodName.startsWith('add')
+      let isReplace = methodName.startsWith('replace')
       let isUpdate = methodName.startsWith('update')
-      let isBefore = methodName.endsWith('Before') || methodName.endsWith('After')
-      let isMove = isBefore || methodName.endsWith('Move') || methodName.endsWith('MoveFront')
+      let isPlace = methodName.endsWith('Before') || methodName.endsWith('After')
+      let isMove = isPlace || methodName.endsWith('Move') || methodName.endsWith('MoveFront')
 
       newMethodBody = newMethodBody.replace(methodBodyOnly, methods.putHelper)
 
-      newMethodBody = newMethodBody.replace(/newEntry[^;]+:= deqPrev;/, '')
+      newMethodBody = newMethodBody.replace(/newEntry[^;]+:= deqPrev;/g, '')
 
-      newMethodBody = newMethodBody.replace(/placeEntry, placeEntry]/, isFront ? 'placeEntry, deqPrev]' : 'deqPrev, placeEntry]')
+      newMethodBody = newMethodBody.replace(/place, place]/g, isFront ? 'place, deqPrev]' : 'deqPrev, place]')
 
-      if (!isUpdate) newMethodBody = newMethodBody.replace(/let newValue =[^;]+;/g, '')
+      let updateBody = type === 'map' ? getBody(newMethodBody, /if \(method & MOVE/, { bodyStarted: true, bodyOnly: true }) : ''
+      let replaceValueSwitch = type === 'map' ? getBody(updateBody, /else switch \(getNewValue\(keyParam, value\)\)/) : ''
+      let replaceValueBody = type === 'map' ? getBody(replaceValueSwitch, /case \(newValue\)/, { bodyOnly: true }) : ''
 
-      if (type === 'map' && (!isMove || isUpdate)) {
-        newMethodBody = newMethodBody.replace(/= switch \(newValue\) {[^}]+}/, '= (key, ?newValue, hash, links)')
+      if (!isMove && (isPut || isSet || isAdd) && type === 'map') {
+        let switchBody = getBody(newMethodBody, /switch \(getNewValue\(keyParam, null\)\)/)
+        let caseBody = getBody(switchBody, /case \(newValue\)/, { bodyOnly: true })
 
-        let switchBody = getBody(newMethodBody, /switch \(newValue\)/)
-        let caseBody = getBody(newMethodBody, /case \(_\)/, { bodyOnly: true })
-
-        newMethodBody = newMethodBody.replace(switchBody, `${adjustIndent(caseBody, -4).replace(/newValue/g, '?newValue')}`)
+        newMethodBody = newMethodBody.replace(switchBody, `${caseBody.replace(/newValue/g, '?newValue')}`)
       }
 
-      if (!isUpdate) newMethodBody = newMethodBody.replace(/newValue/g, 'valueParam')
+      if (isReplace) {
+        let switchBody = getBody(newMethodBody, /switch \(getNewValue/)
 
-      newMethodBody = newMethodBody.replace(/if \(isUpdate\) \??([^;]+) else ([^;]+)/g, isUpdate ? '$1' : '$2')
-
-      if (!isBefore) {
-        let placeLogicBody = getBody(newMethodBody, /let placeHashParam = if/, { bodyStarted: true, bodyOnly: true })
-        let mainLoopBody = getBody(newMethodBody, /if \(placeHash == NULL_HASH/, { bodyOnly: true })
-
-        newMethodBody = newMethodBody.replace(placeLogicBody, `loop {${adjustIndent(mainLoopBody, -2)}};\n${getIndent(2)}`)
-
-        newMethodBody = newMethodBody.replace(/usePlaceKey or /, '')
-
-        newMethodBody = newMethodBody.replace(/placeEntry/g, 'edgeEntry')
-
-        newMethodBody = newMethodBody.replace(/placeLinks/g, `edgeEntry.${type === 'map' ? '3' : '2'}`)
+        newMethodBody = newMethodBody.replace(switchBody, 'return null;')
       }
 
-      let moveMatch = newMethodBody.match(/if \(moveExisting\)/)
-
-      let moveBody = getBody(newMethodBody, moveMatch.index)
-      let moveElseBody = type === 'map' ? getBody(newMethodBody, moveMatch.index + moveBody.length) : ''
-
-      if (isMove) {
-        let moveBodyOnly = getBody(moveBody, 0, { bodyOnly: true })
-
-        newMethodBody = newMethodBody.replace(moveBody, adjustIndent(moveBodyOnly, -2))
-
-        if (type === 'map') newMethodBody = newMethodBody.replace(moveElseBody, '')
+      if (!isMove && (isPut || isSet || isReplace) && type === 'map') {
+        newMethodBody = newMethodBody.replace(updateBody, replaceValueBody.replace(/newValue/g, '?newValue'))
       }
 
-      if (!isMove) {
-        let moveElseBodyOnly = getBody(moveElseBody, 0, { bodyOnly: true })
+      if (!isMove && type === 'set') {
+        let moveBody = getBody(newMethodBody, /if \(method & MOVE/)
 
         newMethodBody = newMethodBody.replace(moveBody, '')
-
-        if (type === 'map') newMethodBody = newMethodBody.replace(moveElseBody, adjustIndent(moveElseBodyOnly, -2))
       }
 
-      if (isBefore) {
-        let conditionalMoveMatch = newMethodBody.match(/if \(usePlaceKey or/)
+      if (isAdd && type === 'map') {
+        newMethodBody = newMethodBody.replace(updateBody, `return value;\n`)
+      }
 
-        let conditionalMoveBody = getBody(newMethodBody, conditionalMoveMatch.index)
-        let conditionalMoveBodyOnly = getBody(conditionalMoveBody, 0, { bodyOnly: true })
+      if (!isMove && isUpdate) {
+        newMethodBody = newMethodBody.replace(updateBody, `${replaceValueSwitch.replace('else switch', 'switch')};\n`)
+      }
 
-        if (type === 'map') {
-          let conditionalMoveElseBody = getBody(newMethodBody, conditionalMoveMatch.index + conditionalMoveBody.length)
+      if (isMove && type === 'map') {
+        let moveBody = getBody(newMethodBody, /if \(method & MOVE/, { bodyOnly: true })
+        let valueSwitchBody = getBody(moveBody, /let newValue = switch/)
 
-          newMethodBody = newMethodBody.replace(conditionalMoveElseBody, '')
+        moveBody = `\nlet linksVar = links;${moveBody.replace(/\blinks\b/g, 'linksVar')}`
+
+        if (!isUpdate) {
+          moveBody = moveBody.replace(valueSwitchBody, '')
+
+          moveBody = moveBody.replace(/(let newEntry = )\(([^,]+), ([^,]+), ([^,]+), (\[var links[^;]+)\);/, '$1(\n$2,\n$3,\n$4,\n$5,\n);')
+
+          moveBody = moveBody.replace('newValue', 'switch (newValue) { case (null) value; case (_) newValue }')
         }
 
-        newMethodBody = newMethodBody.replace(conditionalMoveBody, adjustIndent(conditionalMoveBodyOnly, -2))
-
-        newMethodBody = newMethodBody.replace(/if \(usePlaceKey\) ([^;]+) else[^;]+/g, '$1')
+        newMethodBody = newMethodBody.replace(updateBody, moveBody)
       }
 
-      if (isSet) newMethodBody = newMethodBody.replace(/return[^;]+;/g, 'return;')
+      if (isMove && !isUpdate && type === 'map') {
+        newMethodBody = newMethodBody.replace('getNewValue(keyParam, null)', 'valueParam')
+
+        newMethodBody = newMethodBody.replace('case (newValue) {', 'case (_) {')
+      }
+
+      if (isMove && type === 'set') {
+        let moveBody = getBody(newMethodBody, /if \(method & MOVE/)
+        let moveBodyOnly = getBody(moveBody, 0, { bodyOnly: true })
+
+        newMethodBody = newMethodBody.replace(moveBody, `\nlet linksVar = links;${moveBodyOnly.replace(/\blinks\b/g, 'linksVar')}`)
+      }
+
+      if (!isUpdate) {
+        newMethodBody = newMethodBody.replace(/newValue/g, 'valueParam')
+      }
+
+      newMethodBody = newMethodBody.replace(/if \(method & UPDATE > 0\) \??([^;]+) else ([^;]+)/g, isUpdate ? '$1' : '$2')
+
+      newMethodBody = newMethodBody.replace(/if \(method &[^;]+;/g, '')
+
+      if (!isPlace) {
+        let placeLogicBody = getBody(newMethodBody, /let placeKeyParam = switch/, { bodyStarted: true, bodyOnly: true })
+        let mainLoopBody = getBody(newMethodBody, /if \(placeHash == ROOT/, { bodyOnly: true })
+
+        newMethodBody = newMethodBody.replace(placeLogicBody, `loop {${mainLoopBody}};\n`)
+
+        newMethodBody = newMethodBody.replace(/\bplace\b/g, 'root')
+
+        newMethodBody = newMethodBody.replace(/placeLinks/g, `root.${linksKey}`)
+      }
+
+      newMethodBody = newMethodBody.replace(/\broot\b/g, 'rootVar')
+
+      newMethodBody = newMethodBody.replace(/(var parent =)/, '\nlet rootVar = root;\n$1')
+
+      if (!isPlace && !(isReplace && !isMove)) {
+        newMethodBody = newMethodBody.replace(/rootVar\.(2|3)/g, 'rootLinksVar')
+
+        newMethodBody = newMethodBody.replace(/(var entry =)/, `\nlet rootLinksVar = parent.${linksKey};\n$1`)
+      }
+
+      if (isPlace || (isReplace && !isMove)) {
+        newMethodBody = newMethodBody.replace('var entry = rootVar', 'var entry = parent')
+      }
+
+      newMethodBody = newMethodBody.replace(/\bhash\b/g, 'hashVar').replace(/(if \(hash)/, 'let hashVar = hash;\n\n$1')
+
+      newMethodBody = newMethodBody.replace(/\bplaceHash\b/g, 'placeHashVar').replace(/(if \(placeHash)/, 'let placeHashVar = placeHash;\n\n$1')
+
+      if (isSet || isAdd && type === 'set') {
+        newMethodBody = newMethodBody.replace(/return[^;]+;/g, 'return;')
+      }
 
       methods[methodName] = getBody(newMethodBody, 0, { bodyOnly: true })
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    if (/^(remove|delete|pop(Front)?)$/.test(methodName)) {
+    if (/^(remove|delete|pop(Front)?|cycle(Front)?)$/.test(methodName)) {
+      let isFront = methodName.endsWith('Front')
       let isPop = methodName.startsWith('pop')
+      let isCycle = methodName.startsWith('cycle')
       let isDelete = methodName.startsWith('delete')
+      let isRemove = isDelete || methodName.startsWith('remove')
 
       newMethodBody = newMethodBody.replace(methodBodyOnly, methods.removeHelper)
 
-      newMethodBody = newMethodBody.replace(/if \(removeLast\) ([^)]+) else (\w+\([^)]+\))/g, isPop ? '$1' : '$2')
+      newMethodBody = newMethodBody.replace(/\(?if \(method == REMOVE\) ([^{;]+) else ([^);]+)\)?/g, isRemove ? '$1' : '$2')
 
-      let removeBody = getBody(newMethodBody, /if \(deqLast\./)
-      let removeBodyOnly = getBody(removeBody, 0, { bodyOnly: true })
+      newMethodBody = newMethodBody.replace(/var leafParent = parent/, 'var leafParent = leaf')
 
-      if (!isPop) {
-        newMethodBody = newMethodBody.replace(removeBody, adjustIndent(removeBodyOnly, -2))
+      if (!((isPop || isCycle) && type === 'set')) {
+        newMethodBody = newMethodBody.replace(/if \(hashParam[^;]+;/, '')
+      }
 
-        newMethodBody = newMethodBody.replace(/let deqLast =[^;]+;/, '')
+      let loopBody = getBody(newMethodBody, /let hashParam =/, { bodyStarted: true, bodyOnly: true })
+      let updateBody = getBody(newMethodBody, /if \(method == CYCLE/, { bodyStarted: true, bodyOnly: true })
+      let cycleBody = getBody(newMethodBody, /if \(method == CYCLE/, { bodyOnly: true })
+      let removeBody = getBody(newMethodBody, /else {\s+let deqPrev =/, { bodyOnly: true })
 
-        newMethodBody = newMethodBody.replace(/return getResult[^;]+/, 'return value')
+      if (isRemove) {
+        newMethodBody = newMethodBody.replace(updateBody, removeBody.replace(/\blinks\b/g, 'linksVar'))
+
+        newMethodBody = newMethodBody.replace(/(let deqPrev =)/g, 'let linksVar = links;\n$1')
+
+        newMethodBody = newMethodBody.replace(/return \?\(key, unwrap\(value\)\)/, 'return value')
+
+        newMethodBody = newMethodBody.replace(/\s*(var shiftingHash =)/, '\n$1')
+
+        newMethodBody = newMethodBody.replace(/\bhash\b/g, 'hashVar').replace(/(if \(hash)/, 'let hashVar = hash;\n\n$1')
+
+        newMethodBody = newMethodBody.replace(/\broot\b/g, 'rootVar')
+
+        newMethodBody = newMethodBody.replace(/(var parent =)/, '\nlet rootVar = root;\n$1')
+
+        newMethodBody = newMethodBody.replace('var entry = rootVar', 'var entry = parent')
 
         if (type === 'set') {
           newMethodBody = newMethodBody.replace(/return (null|\?key)/g, (item) => `return ${item.endsWith('key') ? 'true' : 'false'}`)
         }
       }
 
-      if (isPop) {
-        if (type === 'map') {
-          removeBodyOnly = adjustIndent(removeBodyOnly, 2)
+      if (isPop && type === 'map') {
+        newMethodBody = newMethodBody.replace(loopBody, `switch (deqLast.1) {\ncase (?someValue) {\n${loopBody}};\n\ncase (_) null;\n};\n`)
 
-          removeBodyOnly = `switch (deqLast.1) {\n${getIndent(6)}case (?someValue) {${removeBodyOnly}};`
+        newMethodBody = newMethodBody.replace(updateBody, removeBody.replace(/\blinks\b/g, 'linksVar'))
 
-          newMethodBody = newMethodBody.replace(removeBody, `${removeBodyOnly}\n\n${getIndent(6)}case (_) null;\n${getIndent(4)}}`)
+        newMethodBody = newMethodBody.replace(/(let deqPrev =)/g, 'let linksVar = links;\n$1')
+
+        newMethodBody = newMethodBody.replace(/(deqNext\.(?:3|2)\[DEQ[^;]+;)\s+(deqPrev\.(?:3|2)\[DEQ[^;]+;)/, '$2\n$1')
+
+        newMethodBody = newMethodBody.replace(/\s*let deqNext =[^;]+;/, '')
+
+        newMethodBody = newMethodBody.replace(/deqNext|root/g, 'rootVar')
+
+        newMethodBody = newMethodBody.replace(/rootVar\.(2|3)/g, 'rootLinksVar')
+
+        let switchVars = `let rootVar = root;\nlet rootLinks = rootVar.${linksKey};\nlet deqLast = rootLinks[DEQ_PREV];`
+
+        newMethodBody = newMethodBody.replace(/(switch \(deqLast)/, `${switchVars}\n\n$1`)
+
+        newMethodBody = newMethodBody.replace(/let hashParam =[^;]+;\s+/, `let hashParam = deqLast.${hashKey};\n`)
+
+        newMethodBody = newMethodBody.replace(/else if \(hash == ROOT\) {[^}]+}/, '')
+
+        newMethodBody = newMethodBody.replace('unwrap(value)', 'someValue')
+      }
+
+      if (isPop && type === 'set') {
+        newMethodBody = newMethodBody.replace(updateBody, removeBody.replace(/\blinks\b/g, 'linksVar'))
+
+        newMethodBody = newMethodBody.replace(/(let deqPrev =)/g, 'let linksVar = links;\n$1')
+
+        newMethodBody = newMethodBody.replace(/(deqNext\.(?:3|2)\[DEQ[^;]+;)\s+(deqPrev\.(?:3|2)\[DEQ[^;]+;)/, '$2\n$1')
+
+        newMethodBody = newMethodBody.replace(/\s*let deqNext =[^;]+;/, '')
+
+        newMethodBody = newMethodBody.replace(/deqNext|root/g, 'rootVar')
+
+        newMethodBody = newMethodBody.replace(/rootVar\.(2|3)/g, 'rootLinksVar')
+
+        newMethodBody = newMethodBody.replace(/(let hashParam =)/, `let rootVar = root;\nlet rootLinks = rootVar.${linksKey};\n$1`)
+
+        newMethodBody = newMethodBody.replace(/else if \(hash == ROOT\) {[^}]+}/, '')
+      }
+
+      if (isCycle && type === 'map') {
+        newMethodBody = newMethodBody.replace(loopBody, `switch (deqLast.1) {\ncase (?someValue) {\n${loopBody}};\n\ncase (_) null;\n};\n`)
+
+        newMethodBody = newMethodBody.replace(updateBody, cycleBody.replace(/\blinks\b/g, 'linksVar'))
+
+        newMethodBody = newMethodBody.replace(/newEntry[^;]+:= deqFirst;/g, '')
+
+        newMethodBody = newMethodBody.replace(/root, root]/g, isFront ? 'deqFirst, root]' : 'root, deqFirst]')
+
+        newMethodBody = newMethodBody.replace(/(let deqFirst =)/g, 'let linksVar = links;\n$1')
+
+        newMethodBody = newMethodBody.replace(/\broot\b/g, 'rootVar')
+
+        newMethodBody = newMethodBody.replace(/rootVar\.(2|3)/g, 'rootLinksVar')
+
+        let switchVars = `let rootVar = root;\nlet rootLinks = rootVar.${linksKey};\nlet deqLast = rootLinks[DEQ_PREV];`
+
+        newMethodBody = newMethodBody.replace(/(switch \(deqLast)/, `${switchVars}\n\n$1`)
+
+        newMethodBody = newMethodBody.replace(/let hashParam =[^;]+;\s+/, `let hashParam = deqLast.${hashKey};\n`)
+
+        newMethodBody = newMethodBody.replace(/else if \(hash == ROOT\) {[^}]+}/, '')
+
+        newMethodBody = newMethodBody.replace('unwrap(value)', 'someValue')
+      }
+
+      if (isCycle && type === 'set') {
+        newMethodBody = newMethodBody.replace(updateBody, cycleBody.replace(/\blinks\b/g, 'linksVar'))
+
+        newMethodBody = newMethodBody.replace(/newEntry[^;]+:= deqFirst;/g, '')
+
+        newMethodBody = newMethodBody.replace(/root, root]/g, isFront ? 'deqFirst, root]' : 'root, deqFirst]')
+
+        newMethodBody = newMethodBody.replace(/(let deqFirst =)/g, 'let linksVar = links;\n$1')
+
+        newMethodBody = newMethodBody.replace(/\broot\b/g, 'rootVar')
+
+        newMethodBody = newMethodBody.replace(/rootVar\.(2|3)/g, 'rootLinksVar')
+
+        newMethodBody = newMethodBody.replace(/(let hashParam =)/, `let rootVar = root;\nlet rootLinks = rootVar.${linksKey};\n$1`)
+
+        newMethodBody = newMethodBody.replace(/else if \(hash == ROOT\) {[^}]+}/, '')
+      }
+
+      if (!isCycle) {
+        let leafReplaceBody = getBody(newMethodBody, /if \(leafIndex/, { bodyStarted: true, bodyOnly: true })
+        let branchLoopBody = getBody(newMethodBody, / +if \(leafLinks/, { bodyStarted: true, bodyOnly: true })
+        let branchCheckBody = getBody(newMethodBody, / +if \(leafLinks/, { bodyOnly: true })
+
+        let newBranchLoopBody = `let leafLinksVar = leaf.${linksKey};`
+        let branchReplaceBody = ''
+
+        for (let i = 1; i <= 4; i++) {
+          if (i > 1) newBranchLoopBody = `${newBranchLoopBody} else {`
+
+          branchReplaceBody = `${branchReplaceBody}\nleafLinksVar[BRANCH_${i}] := linksVar[BRANCH_${i}];`
+
+          let newBranchCheckBody = branchCheckBody.replace(/leafLinks\[BRANCH_1\]/, `branch${i}`).replace('BRANCH_1', `BRANCH_${i}`)
+
+          newBranchLoopBody = `${newBranchLoopBody}\nlet branch${i} = leafLinksVar[BRANCH_${i}];\n`
+
+          newBranchLoopBody = `${newBranchLoopBody}\nif (branch${i}.${hashKey} != ROOT) {${newBranchCheckBody}}`
         }
 
-        newMethodBody = newMethodBody.replace(/let (hashParam|deqNext) =[^;]+;/g, '')
+        leafReplaceBody = leafReplaceBody.replace(/for \(index in leaf[^;]+;/, branchReplaceBody)
 
-        newMethodBody = newMethodBody.replace(/deqNext/g, 'edgeEntry')
-
-        newMethodBody = newMethodBody.replace(/hashParam/g, type === 'map' ? 'deqLast.2' : 'deqLast.1')
-
-        newMethodBody = newMethodBody.replace(/else if \(hash == NULL_HASH\) {[^}]+}/, '')
-
-        newMethodBody = newMethodBody.replace(/return null/g, 'null')
-
-        newMethodBody = newMethodBody.replace(/return getResult[^;]+/g, 'return ?(key, someValue)')
+        newMethodBody = newMethodBody.replace(branchLoopBody, `${newBranchLoopBody} else {\n${leafReplaceBody}};\n};\n};\n};\n`)
       }
-
-      let { 1: indent } = newMethodBody.match(/( +)if \(leafLinks/)
-
-      let leafReplaceBody = getBody(newMethodBody, /if \(leafIndex/, { bodyStarted: true, bodyOnly: true })
-      let branchLoopBody = getBody(newMethodBody, / +if \(leafLinks/, { bodyStarted: true, bodyOnly: true })
-      let branchCheckBody = getBody(newMethodBody, / +if \(leafLinks/, { bodyOnly: true })
-
-      let linksKey = type === 'map' ? '3' : '2'
-
-      let newBranchLoopBody = ''
-
-      let branchReplaceBody = ''
-
-      for (let i = 1; i <= 4; i++) {
-        if (i > 1) newBranchLoopBody = `${newBranchLoopBody} else {`
-
-        branchReplaceBody = `${branchReplaceBody}\n${getIndent(4, indent)}leaf.${linksKey}[BRANCH_${i}] := entry.${linksKey}[BRANCH_${i}];`
-
-        let newBranchCheckBody = branchCheckBody.replace(/leafLinks\[BRANCH_1\]/, `branch${i}`)
-
-        newBranchCheckBody = newBranchCheckBody.replace('BRANCH_1', `BRANCH_${i}`)
-
-        newBranchLoopBody = `${newBranchLoopBody}\n${getIndent(2 * i - 2, indent)}let branch${i} = leafLinks[BRANCH_${i}];\n`
-
-        newBranchLoopBody = `${newBranchLoopBody}\n${getIndent(2 * i - 2, indent)}if (branch${i}.${type === 'map' ? '2' : '1'} != NULL_HASH) {`
-
-        newBranchLoopBody = `${newBranchLoopBody}${adjustIndent(newBranchCheckBody, 2 * i - 2)}}`
-      }
-
-      leafReplaceBody = leafReplaceBody.replace(/for \(index in leaf[^;]+;/, branchReplaceBody)
-
-      newBranchLoopBody = `${newBranchLoopBody} else {\n${getIndent(8, indent)}${adjustIndent(leafReplaceBody, 6)}};`
-
-      newBranchLoopBody = `${newBranchLoopBody}\n${getIndent(4, indent)}};\n${getIndent(2, indent)}};\n${indent}};\n${getIndent(-2, indent)}`
-
-      newMethodBody = newMethodBody.replace(branchLoopBody, newBranchLoopBody)
 
       if (isDelete) newMethodBody = newMethodBody.replace(/return[^;]+;/g, 'return;')
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    if (/^(peek|cycle)(Front)?$/.test(methodName)) {
-      let isPeek = methodName.startsWith('peek')
+    if (/^clone(Desc)?$/.test(methodName)) {
+      newMethodBody = newMethodBody.replace(methodBodyOnly, methods.cloneHelper)
 
-      newMethodBody = newMethodBody.replace(methodBodyOnly, methods.peekHelper)
+      newMethodBody = newMethodBody.replace(/root\.(2|3)/g, 'rootLinks')
 
-      if (isPeek) {
-        let switchBody = getBody(newMethodBody, /switch \(value|if \(hash == NULL_HASH/)
+      newMethodBody = newMethodBody.replace(/\broot\b/g, 'rootVar')
 
-        if (type === 'map') {
-          newMethodBody = newMethodBody.replace(switchBody, 'switch (value) { case (?someValue) ?(key, someValue); case (_) null }')
-        }
+      newMethodBody = newMethodBody.replace('var entry = rootVar;', '')
 
-        if (type === 'set') {
-          newMethodBody = newMethodBody.replace(switchBody, 'if (hash == NULL_HASH) null else ?key')
-        }
+      let branchVars = ''
+
+      for (let i = 1; i <= 4; i++) branchVars = `${branchVars}let branch${i} = rootLinks[BRANCH_${i}];\n`
+
+      let entryData = type === 'map' ? '(rootVar.0, null, ROOT, newRootLinks):Entry<K, V>' : '(rootVar.0, ROOT, newRootLinks)'
+
+      let newRootReplace = `let newRootLinks = [var rootVar, rootVar, rootVar, rootVar, rootVar, rootVar];\nlet newRoot = ${entryData};`
+
+      newRootReplace = `let rootVar = root;\nvar entry = rootVar;\n\nlet rootLinks = links;\n${branchVars}\n\n${newRootReplace}`
+
+      newMethodBody = newMethodBody.replace(/let newRoot =[^;]+;/, newRootReplace)
+
+      let branchList = ''
+
+      for (let i = 1; i <= 4; i++) {
+        branchList = `${branchList}newRootLinks[BRANCH_${i}] := if (branch${i}.${hashKey} != ROOT) cloneEntry(branch${i}, newRoot) else newRoot;\n`
       }
 
-      if (!isPeek) {
-        let cycleBody = getBody(newMethodBody, /if \(cycleEntry/)
-        let cycleBodyOnly = getBody(cycleBody, 0, { bodyOnly: true })
+      let loopBody = getBody(newMethodBody, /for \(index in newRoot/)
 
-        newMethodBody = newMethodBody.replace(cycleBody, adjustIndent(cycleBodyOnly, -2))
-
-        newMethodBody = newMethodBody.replace(/return ([^;]+)/g, '$1')
-      }
+      newMethodBody = newMethodBody.replace(loopBody, branchList)
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    if (/^(map(Filter)?|filter|clone)(Desc)?$/.test(methodName)) {
+    if (/^(map(Filter)?|filter)(Desc)?$/.test(methodName)) {
       let isDesc = methodName.endsWith('Desc')
       let isMapFilter = methodName.startsWith('mapFilter')
       let isMap = !isMapFilter && methodName.startsWith('map')
       let isFilter = methodName.startsWith('filter')
-      let isClone = methodName.startsWith('clone')
+
+      let putMethod = isDesc ? changeDirection(methods.putMove) : methods.putMove
+
+      let checkRemoved = `itemLinks[BRANCH_1].${hashKey} != itemHash or itemLinks[BRANCH_2].${hashKey} != itemHash`
 
       newMethodBody = newMethodBody.replace(methodBodyOnly, methods.mapFilterHelper)
 
-      newMethodBody = newMethodBody.replace(/newEntry[^;]+:= deqPrev;/, '')
+      newMethodBody = newMethodBody.replace(/\b(key|value|hash|links)\b/g, (name) => `item${capitalize(name)}`)
 
-      newMethodBody = newMethodBody.replace(/newEdge, newEdge]/, isDesc ? 'newEdge, deqPrev]' : 'deqPrev, newEdge]')
+      newMethodBody = newMethodBody.replace(/\bentry\b/g, 'item')
 
-      if (type === 'set' && isClone) {
-        let elseBody = getBody(newMethodBody, /else {/)
+      newMethodBody = newMethodBody.replace(/ignore putHelper\([^;]+\);/, `{${putMethod}};\n`)
 
-        newMethodBody = newMethodBody.replace(/if \(acceptEntry\(key\)\) /, '')
-
-        newMethodBody = newMethodBody.replace(elseBody, '')
-      }
+      newMethodBody = newMethodBody.replace(/switch \(valueParam\) {[^}]+valueParam }/, 'valueParam')
 
       if (type === 'map') {
-        let mapFilterBody = getBody(newMethodBody, /if \(acceptEntry/, { bodyOnly: true })
-        let caseBody = getBody(newMethodBody, /case \(\?someValue/)
+        newMethodBody = newMethodBody.replace(/(let newEntry = )\(([^,]+), ([^,]+), ([^,]+), (\[var links[^;]+)\);/, '$1(\n$2,\n$3,\n$4,\n$5,\n);')
 
-        if (isFilter || isClone) newMethodBody = newMethodBody.replace(/createEdgeEntry<K, V2>/, 'createEdgeEntry<K, V>')
+        let switchBody = getBody(newMethodBody, /switch \(valueParam/)
+        let someValueBody = getBody(switchBody, /case \(_/, { bodyOnly: true })
+
+        newMethodBody = newMethodBody.replace(switchBody, someValueBody)
+      }
+
+      newMethodBody = newMethodBody.replace(/\s+let (rootVar|rootLinksVar) =[^;]+;/g, '')
+
+      newMethodBody = newMethodBody.replace('size[SIZE]', 'sizeVar')
+
+      newMethodBody = newMethodBody.replace(/(getHash|areEqual)/g, '$1Var')
+
+      let newMapReplace = `let rootVar = createRoot<$1>(getNullKey());\nlet rootLinks = rootVar.${linksKey};`
+
+      newMapReplace = `${newMapReplace}\nlet getHashVar = hashUtils.0;\nlet areEqualVar = hashUtils.1;\nvar sizeVar = 0:Nat32;`
+
+      newMethodBody = newMethodBody.replace(/let newMap = new<([^>]+)>\(hashUtils\);/g, newMapReplace)
+
+      newMethodBody = newMethodBody.replace(/item := getSibling[^;]+;/, `item := item.${linksKey}[DEQ_NEXT];`)
+
+      newMethodBody = newMethodBody.replace(/if \(itemHash == ROOT[^;]+;/, '')
+
+      newMethodBody = newMethodBody.replace('unwrap(itemValue)', 'someValue')
+
+      newMethodBody = newMethodBody.replace(/(case \(null\) {};)/, '$1\n')
+
+      newMethodBody = newMethodBody.replace(/return[^;]+;/g, 'break loopBody;')
+
+      if (type === 'map') {
+        let iterationBody = getBody(newMethodBody, /switch \(mapEntry/)
+        let caseBody = getBody(iterationBody, /case \(newValue/, { bodyOnly: true })
 
         if (isMapFilter) {
-          let outerSomeCase = `case (?someValue) switch (mapEntry(key, someValue))`
-          let nullCase = `${getIndent(10)}case (null) entry := links[DEQ_NEXT];`
-          let someCase = `${getIndent(10)}case (newValue) {${mapFilterBody}};`
+          let iterationBodyReplace = `switch (itemValue) {\ncase (?someValue)  label loopBody if (${checkRemoved}) {\n${iterationBody};\n};`
 
-          newMethodBody = newMethodBody.replace(caseBody, `${outerSomeCase} {\n${nullCase}\n\n${someCase}\n${getIndent(8)}}`)
+          iterationBodyReplace = `${iterationBodyReplace}\n\ncase (_) return (rootVar, [var sizeVar]);\n};`
 
-          newMethodBody = newMethodBody.replace(/getValue\(newValue\)/, 'newValue')
+          newMethodBody = newMethodBody.replace(iterationBody, iterationBodyReplace)
+
+          newMethodBody = newMethodBody.replace(/keyParam|valueParam/g, (name) => name === 'keyParam' ? 'item.0' : 'newValue')
         }
 
         if (isMap) {
-          newMethodBody = newMethodBody.replace(caseBody, `case (?someValue) {${adjustIndent(mapFilterBody, -2)}}`)
+          let iterationBodyReplace = `switch (itemValue) {\ncase (?someValue)  label loopBody if (${checkRemoved}) {${caseBody}};`
 
-          newMethodBody = newMethodBody.replace(/getValue\(newValue\)/, '?mapEntry(key, someValue)')
+          iterationBodyReplace = `${iterationBodyReplace}\n\ncase (_) return (rootVar, [var sizeVar]);\n};`
+
+          newMethodBody = newMethodBody.replace(iterationBody, iterationBodyReplace)
+
+          newMethodBody = newMethodBody.replace(/keyParam|valueParam/g, (name) => name === 'keyParam' ? 'item.0' : '?mapEntry(key, someValue)')
         }
 
         if (isFilter) {
-          newMethodBody = newMethodBody.replace(/getValue\(newValue\)/, 'value')
+          let iterationBodyReplace = 'switch (itemValue) {\ncase (?someValue) label loopBody'
 
-          newMethodBody = newMethodBody.replace(/let newValue =[^;]+;/, '')
+          iterationBodyReplace = `${iterationBodyReplace} if ((${checkRemoved}) and acceptEntry(itemKey, someValue)) {${caseBody}};`
 
-          newMethodBody = newMethodBody.replace(/newValue/, 'someValue')
+          iterationBodyReplace = `${iterationBodyReplace}\n\ncase (_) return (rootVar, [var sizeVar]);\n};`
+
+          newMethodBody = newMethodBody.replace(iterationBody, iterationBodyReplace)
+
+          newMethodBody = newMethodBody.replace(/keyParam|valueParam/g, (name) => name === 'keyParam' ? 'item.0' : 'item.1')
+
+          newMethodBody = newMethodBody.replace(/createRoot<K, V2>/, 'createRoot<K, V>')
         }
+      }
 
-        if (isClone) {
-          let switchBody = getBody(newMethodBody, /switch \(value/)
-          let finalCaseBody = getBody(newMethodBody, /case \(_\)/, { bodyOnly: true })
+      if (type === 'set') {
+        let iterationCheckReplace = `let hashVar = itemHash;\n\nif (hashVar == ROOT) {\nreturn (rootVar, [var sizeVar]);\n}`
 
-          mapFilterBody = `if (hash == NULL_HASH) {${finalCaseBody}} else {${adjustIndent(mapFilterBody, -2)}}`
+        iterationCheckReplace = `${iterationCheckReplace} else if ((${checkRemoved.replace(/itemHash/g, 'hashVar')}) and acceptEntry(item.0))`
 
-          newMethodBody = newMethodBody.replace(switchBody, adjustIndent(mapFilterBody, -2))
+        newMethodBody = newMethodBody.replace(/if \(acceptEntry\(itemKey\)\)/g, iterationCheckReplace)
 
-          newMethodBody = newMethodBody.replace(/getValue\(newValue\)/, 'value')
-        }
+        newMethodBody = newMethodBody.replace(/keyParam/g, 'item.0')
+
+        newMethodBody = newMethodBody.replace('loop {', 'loop label loopBody {')
       }
     }
 
@@ -379,35 +631,95 @@ for (let [struct, type, path] of structs) {
     if (/^(keys|vals|entries)(From)?(Desc)?$/.test(methodName)) {
       let isKeys = methodName.startsWith('keys')
       let isVals = methodName.startsWith('vals')
+      let isEntries = methodName.startsWith('entries')
       let isFrom = methodName.endsWith('From') || methodName.endsWith('FromDesc')
 
-      if (isFrom) {
-        newMethodBody = newMethodBody.replace(methodBodyOnly, methods.iterateHelper)
+      let checkSiblingRemoved = `$1Links[BRANCH_1].${hashKey} != $1Hash or $1Links[BRANCH_2].${hashKey} != $1Hash`
 
-        newMethodBody = newMethodBody.replace(/if \(shiftingHash != NULL_HASH\) ([^;]+) else[^;]+/, '$1')
-      } else {
-        let indent2 = getIndent(2)
-        let indent4 = getIndent(4)
-        let iterObjectBody = getBody(methods.iterateHelper, /let iter =/)
+      let checkSiblingRemovedVar = `$1Links[BRANCH_1].${hashKey} != hashVar or $1Links[BRANCH_2].${hashKey} != hashVar`
 
-        iterObjectBody = adjustIndent(iterObjectBody, -2)
+      newMethodBody = newMethodBody.replace(methodBodyOnly, methods.iterateHelper)
 
-        newMethodBody = newMethodBody.replace(methodBodyOnly, `\n${indent4}var entry = edgeEntry;\n\n${indent4}${iterObjectBody};\n${indent2}`)
+      newMethodBody = newMethodBody.replace(/let \((key|(deqPrev|deqNext)Key), [^;]+;/g, '')
+
+      newMethodBody = newMethodBody.replace(/entry\.(2|3)\[DEQ\w+\] := deq\w+;/g, '')
+
+      newMethodBody = newMethodBody.replace(/return (?!let)/g, '')
+
+      let iterCondition = `entry := links[$1];\n\nloop if (${checkRemoved} or hash == ROOT) return iter else {\nentry := links[$1];\n};`
+
+      let keysCondition = `entry := links[$1];\n\nloop {\nlet hashVar = hash;\n\nif (hashVar == ROOT) return null`
+
+      keysCondition = `${keysCondition} else if (${checkRemovedVar}) return ?key else {\nentry := links[$1];\n};\n};`
+
+      let keysPeekCondition = `var $1 = links[$2];\n\nloop {\nlet hashVar = $1Hash;\n\nif (hashVar == ROOT) return null`
+
+      keysPeekCondition = `${keysPeekCondition} else if (${checkSiblingRemovedVar}) {\nlinks[$2] := $1;\n\nreturn ?$1Key;\n}`
+
+      keysPeekCondition = `${keysPeekCondition} else {\n$1 := $1Links[$2];\n};\n};`
+
+      let valsCondition = `entry := links[$1];\n\nloop if (${checkRemoved} or hash == ROOT) return value else {\nentry := links[$1];\n};`
+
+      let valsPeekCondition = `var $1 = links[$2];\n\nloop if (${checkSiblingRemoved} or $1Hash == ROOT) {\nlinks[$2] := $1;\n\nreturn $1Value;\n}`
+
+      valsPeekCondition = `${valsPeekCondition} else {\n$1 := $1Links[$2];\n};`
+
+      let entriesCondition = `entry := links[$1];\n\nloop switch (value) {\ncase (?someValue) if (${checkRemoved})`
+
+      entriesCondition = `${entriesCondition} return ?(key, someValue) else {\nentry := links[$1];\n};\n\ncase (_) return null;\n};`
+
+      let entriesPeekCondition = `var $1 = links[$2];\n\nloop switch ($1Value) {\ncase (?someValue) if (${checkSiblingRemoved})`
+
+      entriesPeekCondition = `${entriesPeekCondition} {\nlinks[$2] := $1;\n\nreturn ?($1Key, someValue);\n}`
+
+      entriesPeekCondition = `${entriesPeekCondition} else {\n$1 := $1Links[$2];\n};\n\ncase (_) return null;\n};`
+
+      let entriesCurrentReplace = 'switch (value) { case (?someValue) ?(key, someValue); case (_) null }'
+
+      if (!isFrom) {
+        let placeLogicBody = getBody(newMethodBody, /let keyParam = switch/, { bodyStarted: true, bodyOnly: true })
+        let iterObjectBody = getBody(newMethodBody, /let iter =/)
+
+        newMethodBody = newMethodBody.replace(placeLogicBody, `var started = false;\nvar entry = root;\n\n${iterObjectBody};\n`)
+      }
+
+      if (isKeys) {
+        newMethodBody = newMethodBody.replace(/entry := getSibling\(entry, (DEQ\w+)\);\s+if \(hash[^;]+;/g, keysCondition)
+
+        newMethodBody = newMethodBody.replace(/entry := getSibling\(entry, (DEQ\w+)\);\s+iter;/g, iterCondition)
+
+        newMethodBody = newMethodBody.replace(/let (deqPrev|deqNext) = getSibling\(entry, (DEQ\w+)\);\s+if \(deq[^;]+;/g, keysPeekCondition)
+
+        newMethodBody = newMethodBody.replace(/mapEntry\(key, unwrap\(value\)\)/, '?key')
+      }
+
+      if (isVals) {
+        newMethodBody = newMethodBody.replace(/entry := getSibling\(entry, (DEQ\w+)\);\s+if \(hash[^;]+;/g, valsCondition)
+
+        newMethodBody = newMethodBody.replace(/entry := getSibling\(entry, (DEQ\w+)\);\s+iter;/g, iterCondition)
+
+        newMethodBody = newMethodBody.replace(/let (deqPrev|deqNext) = getSibling\(entry, (DEQ\w+)\);\s+if \(deq[^;]+;/g, valsPeekCondition)
+
+        newMethodBody = newMethodBody.replace(/if \(hash[^;]+mapEntry\(key, unwrap\(value\)\)/, 'value')
+      }
+
+      if (isEntries) {
+        newMethodBody = newMethodBody.replace(/entry := getSibling\(entry, (DEQ\w+)\);\s+if \(hash[^;]+;/g, entriesCondition)
+
+        newMethodBody = newMethodBody.replace(/entry := getSibling\(entry, (DEQ\w+)\);\s+iter;/g, iterCondition)
+
+        newMethodBody = newMethodBody.replace(/let (deqPrev|deqNext) = getSibling\(entry, (DEQ\w+)\);\s+if \(deq[^;]+;/g, entriesPeekCondition)
+
+        newMethodBody = newMethodBody.replace(/if \(hash[^;]+mapEntry\(key, unwrap\(value\)\)/, entriesCurrentReplace)
       }
 
       if (type === 'map') {
-        if (isKeys || isVals) {
-          newMethodBody = newMethodBody.replace(/mapEntry\(key, value\)/g, () => isKeys ? '?key' : 'value')
-        } else {
-          let entriesIter = 'switch (value) { case (?someValue) ?(key, someValue); case (_) null };'
-
-          newMethodBody = newMethodBody.replace(/if \(hash == NULL_HASH\) null[^;]+;/g, entriesIter)
-        };
-
         newMethodBody = newMethodBody.replace(/\bT\b/g, () => isKeys ? 'K' : isVals ? 'V' : '(K, V)')
       };
 
-      newMethodBody = newMethodBody.replace(/return (?!let)/g, '')
+      newMethodBody = newMethodBody.replace(/(var started = hash)/, '$1Var')
+
+      newMethodBody = newMethodBody.replace(/if \(hash == ROOT or hash/, 'let hashVar = hash;\n\nif (hashVar == ROOT or hashVar')
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -420,58 +732,52 @@ for (let [struct, type, path] of structs) {
 
       newMethodBody = newMethodBody.replace(methodBodyOnly, methods.findHelper)
 
-      newMethodBody = newMethodBody.replace(/-> \(\(\)\)/, '-> ()')
+      newMethodBody = newMethodBody.replace(/entry := getSibling[^;]+;/, `entry := entry.${linksKey}[DEQ_NEXT];`)
 
-      if (type === 'map') {
-        if (isFind) {
-          newMethodBody = newMethodBody.replace(/if \(acceptEntry[^;]+/, 'if (mapEntry(key, someValue)) return ?(key, someValue)')
+      let acceptEntry = type === 'map' ? 'acceptEntry(key, someValue)' : 'acceptEntry(key)'
 
-          newMethodBody = newMethodBody.replace(/noMatchResult/, 'null')
-        }
+      let mapEntry = type === 'map' ? 'mapEntry(key, someValue)' : 'mapEntry(key)'
 
-        if (isSome) {
-          newMethodBody = newMethodBody.replace(/if \(acceptEntry[^;]+/, 'if (mapEntry(key, someValue)) return true')
+      let findData = type === 'map' ? '?(key, someValue)' : '?key'
 
-          newMethodBody = newMethodBody.replace(/noMatchResult/, 'false')
-        }
+      let condition = 'switch (value) {\ncase (?someValue) PLACEHOLDER\ncase (_) return null;\n};'
 
-        if (isEvery) {
-          newMethodBody = newMethodBody.replace(/if \(acceptEntry[^;]+/, 'if (not mapEntry(key, someValue)) return false')
+      if (type === 'set') condition = 'if (hashVar == ROOT) return null else PLACEHOLDER'
 
-          newMethodBody = newMethodBody.replace(/noMatchResult/, 'true')
-        }
+      if (isFind) {
+        condition = condition.replace('PLACEHOLDER', `if ((${checkRemoved}) and ${acceptEntry}) {\nreturn ${findData};\n};\n`)
 
-        if (isForEach) {
-          newMethodBody = newMethodBody.replace(/if \(acceptEntry[^;]+/, 'mapEntry(key, someValue)')
+        newMethodBody = newMethodBody.replace(/if \(hash == ROOT[^;]+;/, condition)
+      }
 
-          newMethodBody = newMethodBody.replace(/noMatchResult/, '')
-        }
+      if (isSome) {
+        condition = condition.replace('PLACEHOLDER', `if ((${checkRemoved}) and ${acceptEntry}) {\nreturn true;\n};\n`)
+
+        condition = condition.replace('return null', 'return false')
+
+        newMethodBody = newMethodBody.replace(/if \(hash == ROOT[^;]+;/, condition)
+      }
+
+      if (isEvery) {
+        condition = condition.replace('PLACEHOLDER', `if ((${checkRemoved}) and not ${acceptEntry}) {\nreturn false;\n};\n`)
+
+        condition = condition.replace('return null', 'return true')
+
+        newMethodBody = newMethodBody.replace(/if \(hash == ROOT[^;]+;/, condition)
+      }
+
+      if (isForEach) {
+        condition = condition.replace('PLACEHOLDER', `if (${checkRemoved}) ${mapEntry};`)
+
+        condition = condition.replace('return null', 'return')
+
+        newMethodBody = newMethodBody.replace(/if \(hash == ROOT[^;]+;/, condition)
       }
 
       if (type === 'set') {
-        if (isFind) {
-          newMethodBody = newMethodBody.replace(/if \(acceptEntry[^;]+/, 'if (mapEntry(key)) return ?key')
+        newMethodBody = newMethodBody.replace(/\bhash\b/g, 'hashVar')
 
-          newMethodBody = newMethodBody.replace(/noMatchResult/, 'null')
-        }
-
-        if (isSome) {
-          newMethodBody = newMethodBody.replace(/if \(acceptEntry[^;]+/, 'if (mapEntry(key)) return true')
-
-          newMethodBody = newMethodBody.replace(/noMatchResult/, 'false')
-        }
-
-        if (isEvery) {
-          newMethodBody = newMethodBody.replace(/if \(acceptEntry[^;]+/, 'if (not mapEntry(key)) return false')
-
-          newMethodBody = newMethodBody.replace(/noMatchResult/, 'true')
-        }
-
-        if (isForEach) {
-          newMethodBody = newMethodBody.replace(/if \(acceptEntry[^;]+/, 'mapEntry(key)')
-
-          newMethodBody = newMethodBody.replace(/noMatchResult/, '')
-        }
+        newMethodBody = newMethodBody.replace(/(if \(hashVar == ROOT)/g, 'let hashVar = hash;\n\n$1')
       }
     }
 
@@ -481,147 +787,137 @@ for (let [struct, type, path] of structs) {
       let isDesc = methodName.endsWith('Desc')
       let isMap = methodName.endsWith('Map') || methodName.endsWith('MapDesc')
 
-      let indentSize = isMap ? 4 : 2
-      let indent = getIndent(indentSize)
-      let indent2 = getIndent(indentSize + 2)
-
-      let insertMethodName = `${type === 'set' ? 'add' : 'set'}${isDesc ? 'Front' : ''}`
+      let insertMethodName = `${'putMove'}${isDesc ? 'Front' : ''}`
 
       newMethodBody = newMethodBody.replace(methodBodyOnly, methods.fromIterHelper)
-
-      newMethodBody = newMethodBody.replace(/let insertItem =[^;]+;/, '')
-
-      newMethodBody = newMethodBody.replace(/new<([^>]+)>\(hashUtils\)/g, '(createEdgeEntry<$1>(getNullKey()), [var 0:Nat32])')
 
       if (!isMap) {
         let switchBody = getBody(newMethodBody, /switch \(mapItem/)
 
-        newMethodBody = newMethodBody.replace(switchBody, `{${adjustIndent(methods[insertMethodName], indentSize)}}`)
+        newMethodBody = newMethodBody.replace(switchBody, `{${methods[insertMethodName]}}`)
       }
-
-      if (isMap) newMethodBody = newMethodBody.replace(/insertItem\([^)]+\)/, `{${adjustIndent(methods[insertMethodName], indentSize)}}`)
-
-      newMethodBody = newMethodBody.replace(/\(key, value\)/g, 'item')
-
-      newMethodBody = newMethodBody.replace(/for \((item|key)/g, 'label fromIterLoop for (item')
-
-      newMethodBody = newMethodBody.replace(/return;/g, 'continue fromIterLoop;')
-
-      newMethodBody = newMethodBody.replace(/keyParam|valueParam/g, (name) => type === 'set' ? 'item' : name === 'keyParam' ? 'item.0' : 'item.1')
-
-      newMethodBody = newMethodBody.replace(/case \(\?(item|key)/g, `\n${indent2}case (?item`)
-
-      newMethodBody = newMethodBody.replace(/case \(_\) {} /g, `\n\n${indent2}case (_) {};\n${indent}`)
-    }
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    if (/^toArray(Map)?(Desc)?$/.test(methodName)) {
-      let isMap = methodName.endsWith('Map') || methodName.endsWith('MapDesc')
 
       if (isMap) {
-        newMethodBody = newMethodBody.replace(methodBodyOnly, methods.toArrayHelper)
-
-        let tabulateFnBody = getBody(newMethodBody, /= if \(partial\) return/)
-
-        newMethodBody = newMethodBody.replace(tabulateFnBody, '= unwrap(array[i])')
-
-        newMethodBody = newMethodBody.replace(/if \(partial\) ([^;]+) else [^;]+/g, '$1')
+        newMethodBody = newMethodBody.replace(/ignore putHelper\([^;]+\);/, `{${methods[insertMethodName]}};\n`)
       }
 
-      if (!isMap) {
-        let tabulateBody = getBody(methods.toArrayHelper, /tabulateArray/, { delimLeft: '(', delimRight: ')' })
+      if (type === 'map') {
+        let switchBody = getBody(newMethodBody, /switch \(valueParam/)
+        let caseBody = getBody(switchBody, /case \(_/, { bodyOnly: true })
 
-        tabulateBody = `${adjustIndent(tabulateBody, -4)};\n${getIndent(2)}`
+        newMethodBody = newMethodBody.replace(switchBody, caseBody)
+      }
 
-        newMethodBody = newMethodBody.replace(methodBodyOnly, `\n${getIndent(4)}var entry = edgeEntry;\n\n${getIndent(4)}${tabulateBody}`)
+      newMethodBody = newMethodBody.replace(/switch \(valueParam\) {[^}]+valueParam }/, 'valueParam')
 
-        let tabulateFnBody = getBody(newMethodBody, /= if \(partial\) return/)
-        let tabulateFnBodyOnly = getBody(tabulateFnBody, 0, { bodyOnly: true })
+      newMethodBody = newMethodBody.replace(/\s+let (rootVar|rootLinksVar) =[^;]+;/g, '')
 
-        newMethodBody = newMethodBody.replace(tabulateFnBody, `{${tabulateFnBodyOnly}}`)
+      newMethodBody = newMethodBody.replace('size[SIZE]', 'sizeVar')
 
-        newMethodBody = newMethodBody.replace(/\bT\b/g, type === 'map' ? '(K, V)' : 'K')
+      newMethodBody = newMethodBody.replace(/(getHash|areEqual)/g, '$1Var')
 
-        newMethodBody = newMethodBody.replace(/arraySize/, 'size[SIZE]')
+      let createRootParams = type === 'map' ? '<K, V>' : '<K>'
 
-        newMethodBody = newMethodBody.replace(/return unwrap\(mapEntry[^;]+/, type === 'map' ? '(entry.0, unwrap(entry.1))' : 'entry.0')
+      let newMapReplace = `let rootVar = createRoot${createRootParams}(getNullKey());\nlet rootLinks = rootVar.${linksKey};`
+
+      newMapReplace = `${newMapReplace}\nlet getHashVar = hashUtils.0;\nlet areEqualVar = hashUtils.1;\nvar sizeVar = 0:Nat32;`
+
+      newMethodBody = newMethodBody.replace(/let map = new(<[^>]+>)?\(hashUtils\);/g, newMapReplace)
+
+      newMethodBody = newMethodBody.replace(/\?\(key, value\)|\?key/g, '?item')
+
+      newMethodBody = newMethodBody.replace(/(for \(item in iter\))/g, '$1 label loopBody')
+
+      newMethodBody = newMethodBody.replace('return map;', '(rootVar, [var sizeVar]);')
+
+      newMethodBody = newMethodBody.replace(/return[^;]+;/g, 'break loopBody;')
+
+      newMethodBody = newMethodBody.replace(/keyParam|valueParam/g, (name) => type === 'set' ? 'item' : name === 'keyParam' ? 'item.0' : '?item.1')
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    if (/^toArray(Desc)?$/.test(methodName)) {
+      newMethodBody = newMethodBody.replace(methodBodyOnly, methods.toArrayHelper)
+
+      newMethodBody = newMethodBody.replace(/return/g, '')
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    if (/^toArrayMap(Desc)?$/.test(methodName)) {
+      newMethodBody = newMethodBody.replace(methodBodyOnly, methods.toArrayMapHelper)
+
+      newMethodBody = newMethodBody.replace(/entry := getSibling[^;]+;/, `entry := entry.${linksKey}[DEQ_NEXT];`)
+
+      let iterationBody = getBody(newMethodBody, /switch \(mapEntry/)
+
+      let [finalArray] = newMethodBody.match(/return tabulateArray[^;]+/)
+
+      newMethodBody = newMethodBody.replace(/if \(hash == ROOT[^;]+;/, '')
+
+      let iterationBodyReplace = `switch (value) {\ncase (?someValue) if (${checkRemoved}) ${iterationBody};\n\ncase (_) ${finalArray};\n};`
+
+      if (type === 'set') iterationBodyReplace = `if (hash == ROOT) {\n${finalArray}\n} else if (${checkRemoved}) ${iterationBody};`
+
+      newMethodBody = newMethodBody.replace(iterationBody, iterationBodyReplace)
+
+      newMethodBody = newMethodBody.replace('unwrap(value)', 'someValue')
+
+      if (type === 'set') {
+        newMethodBody = newMethodBody.replace(/\bhash\b/g, 'hashVar')
+
+        newMethodBody = newMethodBody.replace(/(if \(hashVar == ROOT)/g, 'let hashVar = hash;\n\n$1')
       }
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    let entryMatch = null
+    if (/^hash(Int|Nat)(8|16|32|64)?$/.test(methodName)) {
+      let [, hashMethod, keyValue] = methodBodyOnly.match(/(hashNat(?:32|64)Helper)\(([^;]+)\);/)
 
-    let entryRegExp = /let \([^)]+\) = (entry|leaf|placeEntry);/g
+      newMethodBody = newMethodBody.replace(methodBodyOnly, methods[hashMethod])
 
-    while ((entryMatch = entryRegExp.exec(newMethodBody)) != null) {
-      let { 0: entryString, 1: entryName } = entryMatch
+      newMethodBody = newMethodBody.replace(/var hash = key;/, `var hash = ${keyValue};`)
+    };
 
-      let entryBody = getBody(newMethodBody, entryMatch.index, { bodyStarted: true })
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-      let newEntryBody = entryBody
+    if (!/^(useHash|calcHash|hash\w+)$/.test(methodName)) {
+      let entryVars = type === 'map' ? { key: 0, value: 1, hash: 2, links: 3 } : { key: 0, hash: 1, links: 2 }
 
-      newEntryBody = newEntryBody.replace(entryString, '')
+      let keyAccess = (_, name, key) => `${name}.${entryVars[key.toLowerCase()]}`
 
-      if (entryName === 'leaf') {
-        let entryVars = type === 'map' ? { leafKey: 0, leafValue: 1, leafHash: 2, leafLinks: 3 } : { leafKey: 0, leafHash: 1, leafLinks: 2 }
+      newMethodBody = newMethodBody.replace(/let \(\w+, (\w+, )?\w+, \w+\) = (entry|deqPrev|deqNext|leaf|place|item);/g, '')
 
-        newEntryBody = newEntryBody.replace(/\b(leafKey|leafValue|leafHash|leafLinks)\b/g, (name) => `leaf.${entryVars[name]}`)
-      }
+      newMethodBody = newMethodBody.replace(/\b(entry|deqPrev|deqNext|leaf|place|item)(Key|Value|Hash|Links)\b/g, keyAccess)
 
-      if (entryName === 'placeEntry') {
-        let entryVars = type === 'map' ? { placeKey: 0, placeValue: 1, placeHash: 2, placeLinks: 3 } : { placeKey: 0, placeHash: 1, placeLinks: 2 }
-
-        newEntryBody = newEntryBody.replace(/\b(placeKey|placeValue|placeHash|placeLinks)\b/g, (name) => `placeEntry.${entryVars[name]}`)
-      }
-
-      if (entryName === 'entry') {
-        let entryVars = type === 'map' ? { key: 0, value: 1, hash: 2, links: 3 } : { key: 0, hash: 1, links: 2 }
-
-        newEntryBody = newEntryBody.replace(/\b(key|value|hash|links)\b/g, (name) => `entry.${entryVars[name]}`)
-      }
-
-      newMethodBody = newMethodBody.replace(entryBody, newEntryBody)
+      newMethodBody = newMethodBody.replace(/\b(key|value|hash|links)\b/g, (key) => `entry.${entryVars[key]}`)
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    let bodyVars = { edgeEntry: 0, size: 1 }
+    if (/(Desc|Front|After)$/.test(methodName)) newMethodBody = changeDirection(newMethodBody)
 
-    let hashUtilVars = { getHash: 0, areEqual: 1, getNullKey: 2 }
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    let linksKey = type === 'map' ? '3' : '2'
+    let bodyVars = { root: 0, size: 1 }
 
-    let linkReplaceBody = ''
+    let hashUtilsVars = { getHash: 0, areEqual: 1, getNullKey: 2 }
 
-    for (let i = 1; i <= 6; i++) {
-      linkReplaceBody = `${linkReplaceBody}$1$2.${linksKey}[${i === 5 ? 'DEQ_PREV' : i === 6 ? 'DEQ_NEXT' : `BRANCH_${i}`}] := $2;`
-    }
+    newMethodBody = newMethodBody.replace(/let \([^)]+\) = map;/g, '')
 
-    if (/(Desc|Front|After)$/.test(methodName)) {
-      newMethodBody = newMethodBody.replace(/(DEQ_PREV|DEQ_NEXT)/g, (item) => item === 'DEQ_PREV' ? 'DEQ_NEXT' : 'DEQ_PREV')
-
-      newMethodBody = newMethodBody.replace(/(deqPrev|deqNext)/g, (item) => item === 'deqPrev' ? 'deqNext' : 'deqPrev')
-
-      newMethodBody = newMethodBody.replace(/(deqFirst|deqLast)/g, (item) => item === 'deqFirst' ? 'deqLast' : 'deqFirst')
-    }
-
-    newMethodBody = newMethodBody.replace(/(\n *)for \(index in (edgeEntry)[^;]+;/, linkReplaceBody)
-
-    newMethodBody = newMethodBody.replace(/(\n *)for \(index in (newEdge)[^;]+;/, linkReplaceBody)
-
-    newMethodBody = newMethodBody.replace(/let \([^)]+\) = map;/, '')
-
-    newMethodBody = newMethodBody.replace(/\b(edgeEntry|size)\b(?!<)/g, (name) => `map.${bodyVars[name]}`)
+    newMethodBody = newMethodBody.replace(/\b(root|size)\b(?!<)/g, (name) => `map.${bodyVars[name]}`)
 
     newMethodBody = newMethodBody.replace(/\((getHash|_), (areEqual|_), (getNullKey|_)\)/g, 'hashUtils')
 
-    newMethodBody = newMethodBody.replace(/\b(getHash|areEqual|getNullKey)\b/g, (name) => `hashUtils.${hashUtilVars[name]}`)
+    newMethodBody = newMethodBody.replace(/\b(getHash|areEqual|getNullKey)\b/g, (name) => `hashUtils.${hashUtilsVars[name]}`)
 
-    newMethodBody = newMethodBody.replace(/unwrap\(([^)]+)\)/g, 'switch ($1) { case (?value) value; case (_) noop() }')
+    newMethodBody = newMethodBody.replace(/unwrap\(([^)]+)\)/g, 'switch ($1) { case (?value) value; case (_) trap("unreachable") }')
 
     newMethodBody = newMethodBody.replace(/return (.+\n *})$/, '$1')
+
+    newMethodBody = newMethodBody.replace(/\b(\w+)Var\b/g, '$1')
 
     optimizedStruct = optimizedStruct.replace(methodBody, newMethodBody)
   }
@@ -631,6 +927,8 @@ for (let [struct, type, path] of structs) {
   optimizedStruct = optimizedStruct.replace(/\s+;/g, ';')
 
   optimizedStruct = optimizedStruct.replace(/\/\/;+/g, '//')
+
+  optimizedStruct = optimizedStruct.replace(/(\/{2,})(\s+\/{2,})+/g, '$1')
 
   optimizedStruct = optimizedStruct.replace(/{;+/g, '{')
 
@@ -646,7 +944,34 @@ for (let [struct, type, path] of structs) {
 
   optimizedStruct = optimizedStruct.replace(/{\n{2,}/g, '{\n')
 
-  optimizedStruct = optimizedStruct.replace(/\n{2,}}/g, '\n}')
+  optimizedStruct = optimizedStruct.replace(/\n{2,}( *})/g, '\n$1')
 
-  fs.writeFileSync(path, optimizedStruct)
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  let indent = 0
+  let indentArea = true
+  let prevChar = ''
+  let indentedStruct = ''
+
+  for (char of optimizedStruct) {
+    if (indentArea && (char === '}' || char === ']' || char === ')')) indent -= 2
+
+    if (indentArea && char === ' ') continue
+
+    if (indentArea && char != ' ' && char != '\n') {
+      if (indent > 0) indentedStruct += ' '.repeat(indent)
+
+      indentArea = false
+    }
+
+    if (char === '\n' && (prevChar === '{' || prevChar === '[' || prevChar === '(')) indent += 2
+
+    if (char === '\n') indentArea = true
+
+    if (char != ' ' && char != '\n') prevChar = char
+
+    indentedStruct += char
+  }
+
+  fs.writeFileSync(path, indentedStruct)
 }
