@@ -156,7 +156,7 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func new<K, V>((getHash, areEqual, getNullKey): HashUtils<K>): Map<K, V> {
-    return (createRoot<K, V>(getNullKey()), [var 0]);
+    return (createRoot(getNullKey()), [var 0]);
   };
 
   public func clear<K, V>(map: Map<K, V>) {

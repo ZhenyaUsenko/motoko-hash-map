@@ -131,7 +131,7 @@ for (let [struct, type, path] of structs) {
       }
 
       if (!isClear) {
-        let newRootReplaceBody = '\nlet rootLinksVar = $2;\n\nlet rootVar = ($1, rootLinksVar);'
+        let newRootReplaceBody = 'let rootLinksVar = $2;\nlet rootVar = ($1, rootLinksVar);'
 
         newMethodBody = newMethodBody.replace(/let root = \((\w+, \w+(?:, \w+)?), ([^;]+)\);/, newRootReplaceBody)
 

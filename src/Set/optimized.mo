@@ -63,9 +63,7 @@ module {
 
   func createRoot<K>(nullKey: K): Entry<K> {
     let temp = (nullKey, ROOT, [var]):Entry<K>;
-
     let rootLinks = [var temp, temp, temp, temp, temp, temp];
-
     let root = (nullKey, ROOT, rootLinks);
 
     rootLinks[BRANCH_1] := root;

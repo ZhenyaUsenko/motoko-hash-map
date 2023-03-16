@@ -64,9 +64,7 @@ module {
 
   func createRoot<K, V>(nullKey: K): Entry<K, V> {
     let temp = (nullKey, null, ROOT, [var]):Entry<K, V>;
-
     let rootLinks = [var temp, temp, temp, temp, temp, temp];
-
     let root = (nullKey, null, ROOT, rootLinks);
 
     rootLinks[BRANCH_1] := root;
@@ -105,7 +103,7 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func new<K, V>(hashUtils: HashUtils<K>): Map<K, V> {
-    (createRoot<K, V>(hashUtils.2()), [var 0]);
+    (createRoot(hashUtils.2()), [var 0]);
   };
 
   public func clear<K, V>(map: Map<K, V>) {
