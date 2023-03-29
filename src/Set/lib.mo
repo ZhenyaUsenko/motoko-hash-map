@@ -35,7 +35,7 @@ module {
 
   public let { peek; peekFront } = Set;
 
-  public let { has } = Set;
+  public let { has; contains } = Set;
 
   public let { put; putFront; add; addFront } = Set;
 

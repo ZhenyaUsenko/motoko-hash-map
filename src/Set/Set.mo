@@ -210,6 +210,10 @@ module {
     return getHelper(map, hashUtils, keyParam);
   };
 
+  public func contains<K>(map: Set<K>, hashUtils: HashUtils<K>, keyParam: K): ?Bool {
+    return if (empty(map)) null else ?getHelper(map, hashUtils, keyParam);
+  };
+
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   func putHelper<K>(

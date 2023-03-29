@@ -164,6 +164,27 @@ module {
     };
   };
 
+  public func contains<K>(map: Set<K>, hashUtils: HashUtils<K>, keyParam: K): ?Bool {
+    if (map.1[SIZE] == 0) return null;
+
+    let hashParam = hashUtils.0(keyParam);
+    var shiftingHash = hashParam;
+    var entry = map.0.2[nat(shiftingHash % HASH_CHUNK_SIZE)];
+
+    loop {
+      let hash = entry.1;
+
+      if (hash == ROOT) {
+        return ?false;
+      } else if (hash == hashParam and hashUtils.1(entry.0, keyParam)) {
+        return ?true;
+      } else {
+        shiftingHash >>= HASH_OFFSET;
+        entry := entry.2[nat(shiftingHash % HASH_CHUNK_SIZE)];
+      };
+    };
+  };
+
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func put<K>(map: Set<K>, hashUtils: HashUtils<K>, keyParam: K): Bool {

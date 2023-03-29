@@ -186,15 +186,22 @@ for (let [struct, type, path] of structs) {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    if (/^(get|has)$/.test(methodName)) {
+    if (/^(get|has|contains)$/.test(methodName)) {
       let isHas = methodName.startsWith('has')
+      let isContains = methodName.startsWith('contains')
 
       newMethodBody = newMethodBody.replace(methodBodyOnly, methods.getHelper)
 
       newMethodBody = newMethodBody.replace(/\bhash\b/g, 'hashVar').replace(/(if \(hash)/, 'let hashVar = hash;\n\n$1')
 
-      if (isHas && type === 'map') {
+      if ((isHas || isContains) && type === 'map') {
         newMethodBody = newMethodBody.replace(/return (null|value)/g, (item) => `return ${item.endsWith('value') ? 'true' : 'false'}`)
+      }
+
+      if (isContains) {
+        newMethodBody = newMethodBody.replace(/return (true|false)/g, 'return ?$1')
+
+        newMethodBody = newMethodBody.replace(/(let hashParam = )/, 'if (size[SIZE] == 0) return null;\n\n$1')
       }
     }
 

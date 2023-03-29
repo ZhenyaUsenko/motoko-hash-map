@@ -35,7 +35,7 @@ module {
 
   public let { peek; peekFront } = Map;
 
-  public let { get; has } = Map;
+  public let { get; has; contains } = Map;
 
   public let { put; putFront; set; setFront; add; addFront; replace; update; updateFront } = Map;
 

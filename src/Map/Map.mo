@@ -229,6 +229,10 @@ module {
     return isSome(getHelper(map, hashUtils, keyParam));
   };
 
+  public func contains<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K): ?Bool {
+    return if (empty(map)) null else ?isSome(getHelper(map, hashUtils, keyParam));
+  };
+
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   func putHelper<K, V>(
