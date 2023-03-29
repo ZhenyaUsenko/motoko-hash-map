@@ -1,0 +1,6 @@
+[package]
+name = "map"
+version = "8.1.0"
+description = "Stable hash maps for Motoko"
+repository = "https://github.com/ZhenyaUsenko/motoko-hash-map"
+license = "MIT"
