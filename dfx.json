@@ -1,0 +1,10 @@
+{
+  "canisters": {
+    "test": {
+      "build": "build.sh test test.mo",
+      "candid": ".dfx/local/canisters/test/test.did",
+      "type": "custom",
+      "wasm": ".dfx/local/canisters/test/test.wasm.gz"
+    }
+  }
+}
