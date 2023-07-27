@@ -1,4 +1,4 @@
-import Map "./optimized";
+import Map "./Map";
 
 module {
   public type Entry<K, V> = Map.Entry<K, V>;
@@ -39,7 +39,7 @@ module {
 
   public let { put; putFront; set; setFront; add; addFront; replace; update; updateFront } = Map;
 
-  public let { putMove; putMoveFront; replaceMove; replaceMoveFront; updateMove; updateMoveFront; putBefore; putAfter } = Map;
+  public let { putMove; putMoveFront; replaceMove; replaceMoveFront; updateMove; updateMoveFront } = Map;
 
   public let { remove; delete; pop; popFront; cycle; cycleFront } = Map;
 

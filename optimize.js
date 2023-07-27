@@ -113,7 +113,7 @@ for (let [struct, type, path] of structs) {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    if (/^(constant|isSome|negate|reject|makeOption|boolToOption|unwrap|rootKey|entryValue|getSibling)$|Helper$/.test(methodName)) {
+    if (/^(constant|isSome|negate|reject|makeOption|boolToOption|unwrap|rootKey|entryKey|entryValue|getSibling)$|Helper$/.test(methodName)) {
       optimizedStruct = optimizedStruct.replace(methodBody, '')
 
       continue
@@ -121,16 +121,19 @@ for (let [struct, type, path] of structs) {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    if (/^(createRoot|clear)$/.test(methodName)) {
+    if (/^(createRoot|make|clear)$/.test(methodName)) {
+      let isCreateRoot = methodName.startsWith('createRoot')
+      let isMake = methodName.startsWith('make')
       let isClear = methodName.startsWith('clear')
 
       let linksReplaceBody = ''
+      let linksSize = isMake ? 4 : 6
 
-      for (let i = 1; i <= 6; i++) {
+      for (let i = 1; i <= linksSize; i++) {
         linksReplaceBody = `${linksReplaceBody}rootLinksVar[${i === 5 ? 'DEQ_PREV' : i === 6 ? 'DEQ_NEXT' : `BRANCH_${i}`}] := rootVar;\n`
       }
 
-      if (!isClear) {
+      if (isCreateRoot) {
         let newRootReplaceBody = 'let rootLinksVar = $2;\nlet rootVar = ($1, rootLinksVar);'
 
         newMethodBody = newMethodBody.replace(/let root = \((\w+, \w+(?:, \w+)?), ([^;]+)\);/, newRootReplaceBody)
@@ -138,6 +141,26 @@ for (let [struct, type, path] of structs) {
         newMethodBody = newMethodBody.replace(/for \(index in root[^;]+;/, linksReplaceBody)
 
         newMethodBody = newMethodBody.replace(/return root;/, 'return rootVar;')
+      }
+
+      if (isMake) {
+        let valueItem = type === 'map' ? ', null' : ''
+        let valueTypeParam = type === 'map' ? ', V' : ''
+        let entryType = type === 'map' ? ':Entry<K, V>' : ''
+
+        let createRootBody = `let nullKey = hashUtils.2();\nlet temp = (nullKey${valueItem}, ROOT, [var]):Entry<K${valueTypeParam}>;`
+
+        createRootBody = `${createRootBody}\nlet rootLinksVar = [var temp, temp, temp, temp, temp, temp];`
+
+        createRootBody = `${createRootBody}\nlet rootVar = (nullKey${valueItem}, ROOT, rootLinksVar)${entryType};\n`
+
+        newMethodBody = newMethodBody.replace(/let root = [^;]+;/, createRootBody)
+
+        newMethodBody = newMethodBody.replace(/root\.(2|3)/, `${linksReplaceBody}rootLinksVar`)
+
+        newMethodBody = newMethodBody.replace(/root\.(2|3)/g, 'rootLinksVar')
+
+        newMethodBody = newMethodBody.replace(/\broot\b/g, 'rootVar')
       }
 
       if (isClear) {

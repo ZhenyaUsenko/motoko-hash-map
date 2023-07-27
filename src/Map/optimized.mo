@@ -106,6 +106,26 @@ module {
     (createRoot(hashUtils.2()), [var 0]);
   };
 
+  public func make<K, V>(hashUtils: HashUtils<K>, keyParam: K, valueParam: V): Map<K, V> {
+    let nullKey = hashUtils.2();
+    let temp = (nullKey, null, ROOT, [var]):Entry<K, V>;
+    let rootLinks = [var temp, temp, temp, temp, temp, temp];
+    let root = (nullKey, null, ROOT, rootLinks):Entry<K, V>;
+
+    let hashParam = hashUtils.0(keyParam);
+    let newEntry = (keyParam, ?valueParam, hashParam, [var root, root, root, root, root, root]);
+
+    rootLinks[BRANCH_1] := root;
+    rootLinks[BRANCH_2] := root;
+    rootLinks[BRANCH_3] := root;
+    rootLinks[BRANCH_4] := root;
+    rootLinks[DEQ_NEXT] := newEntry;
+    rootLinks[DEQ_PREV] := newEntry;
+    rootLinks[nat(hashParam % HASH_CHUNK_SIZE)] := newEntry;
+
+    (root, [var 1]);
+  };
+
   public func clear<K, V>(map: Map<K, V>) {
     let root = map.0;
     let rootLinks = root.3;

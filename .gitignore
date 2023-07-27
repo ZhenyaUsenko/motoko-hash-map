@@ -3,8 +3,3 @@
 .tmp/
 .vessel/
 .vscode/
-build.sh
-dfx.json
-main.mo
-package-set.dhall
-vessel.dhall

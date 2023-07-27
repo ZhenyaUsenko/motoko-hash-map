@@ -52,7 +52,7 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func runTests() {
-    let map = Map.new<Text, Nat>(thash);
+    let map = Map.new<Text, Nat>();
 
     for ((key, value) in entries.vals()) Map.set(map, thash, key, value);
 
@@ -234,26 +234,6 @@ module {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    assert Map.putAfter(map, thash, "independence", ?"assistance", null) == ?9;
-    assert Map.putAfter(map, thash, "importance", ?"independence", null) == ?1;
-
-    assert Map.peek(map) == ?("importance", 1);
-    assert Map.peekFront(map) == ?("technology", 2);
-
-    assert Map.size(map) == 20;
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    assert Map.putBefore(map, thash, "independence", ?"decision", null) == ?9;
-    assert Map.putBefore(map, thash, "importance", ?"technology", null) == ?1;
-
-    assert Map.peek(map) == ?("assistance", 20);
-    assert Map.peekFront(map) == ?("importance", 1);
-
-    assert Map.size(map) == 20;
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     Map.set(map, thash, "xxx", 21);
     assert Map.put(map, thash, "yyy", 21) == null;
 
@@ -264,11 +244,11 @@ module {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    assert Map.pop(map) == ?("yyy", 21);
-    assert Map.pop(map) == ?("xxx", 21);
+    assert Map.pop(map, thash) == ?("yyy", 21);
+    assert Map.pop(map, thash) == ?("xxx", 21);
 
-    assert Map.popFront(map) == ?("bbb", 0);
-    assert Map.popFront(map) == ?("aaa", 0);
+    assert Map.popFront(map, thash) == ?("bbb", 0);
+    assert Map.popFront(map, thash) == ?("aaa", 0);
 
     assert Map.size(map) == 20;
 
@@ -288,11 +268,11 @@ module {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    assert Map.pop(map) == ?("suggestion", 16);
-    assert Map.pop(map) == ?("topic", 15);
+    assert Map.pop(map, thash) == ?("suggestion", 16);
+    assert Map.pop(map, thash) == ?("topic", 15);
 
-    assert Map.popFront(map) == ?("climate", 21);
-    assert Map.popFront(map) == ?("language", 21);
+    assert Map.popFront(map, thash) == ?("climate", 21);
+    assert Map.popFront(map, thash) == ?("language", 21);
 
     assert Map.size(map) == 16;
 
@@ -316,11 +296,11 @@ module {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    assert Map.pop(map) == ?("way", 3);
-    assert Map.pop(map) == ?("xxx", 222);
+    assert Map.pop(map, thash) == ?("way", 3);
+    assert Map.pop(map, thash) == ?("xxx", 222);
 
-    assert Map.popFront(map) == ?("ear", 2);
-    assert Map.popFront(map) == ?("yyy", 222);
+    assert Map.popFront(map, thash) == ?("ear", 2);
+    assert Map.popFront(map, thash) == ?("yyy", 222);
 
     assert Map.size(map) == 14;
 

@@ -144,6 +144,18 @@ module {
     return (createRoot(getNullKey()), [var 0]);
   };
 
+  public func make<K>((getHash, areEqual, getNullKey): HashUtils<K>, keyParam: K): Set<K> {
+    let root = createRoot<K>(getNullKey());
+    let hashParam = getHash(keyParam);
+    let newEntry = (keyParam, hashParam, [var root, root, root, root, root, root]);
+
+    root.2[DEQ_NEXT] := newEntry;
+    root.2[DEQ_PREV] := newEntry;
+    root.2[nat(hashParam % HASH_CHUNK_SIZE)] := newEntry;
+
+    return (root, [var 1]);
+  };
+
   public func clear<K>(map: Set<K>) {
     let (root, size) = map;
 
