@@ -10,10 +10,10 @@ import Map "mo:hashmap/Map";
 
 let { ihash; nhash; thash; phash; calcHash } = Map;
 
-let map1 = Map.new<Nat, Nat>(nhash);
-let map2 = Map.new<Int, Nat>(ihash);
-let map3 = Map.new<Text, Nat>(thash);
-let map4 = Map.new<Principal, Nat>(phash);
+let map1 = Map.new<Nat, Nat>();
+let map2 = Map.new<Int, Nat>();
+let map3 = Map.new<Text, Nat>();
+let map4 = Map.new<Principal, Nat>();
 
 Map.set(map1, nhash, 1, 1);
 Map.set(map2, ihash, -1, 2);

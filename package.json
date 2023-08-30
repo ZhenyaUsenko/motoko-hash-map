@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "start": "dfx start",
+    "build": "DFX_MOC_PATH=$(vessel bin)/moc dfx build",
+    "deploy": "DFX_MOC_PATH=$(vessel bin)/moc dfx deploy"
+  }
+}

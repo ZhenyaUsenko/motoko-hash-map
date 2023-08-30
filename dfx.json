@@ -1,0 +1,15 @@
+{
+  "canisters": {
+    "test": {
+      "main": "test.mo",
+      "type": "motoko",
+      "optimize": "cycles",
+      "gzip": true
+    }
+  },
+  "defaults": {
+    "build": {
+      "packtool": "vessel sources"
+    }
+  }
+}
