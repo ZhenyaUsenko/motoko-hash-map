@@ -1,4 +1,5 @@
 import Map "../src/Map";
+import Debug "mo:base/Debug";
 
 module {
   let { thash } = Map;

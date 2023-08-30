@@ -52,7 +52,7 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func runTests() {
-    let map = Set.new(thash);
+    let map = Set.new<Text>();
 
     for (key in keys.vals()) Set.add(map, thash, key);
 
@@ -194,26 +194,6 @@ module {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    assert Set.putAfter(map, thash, "independence", ?"assistance") == true;
-    assert Set.putAfter(map, thash, "importance", ?"independence") == true;
-
-    assert Set.peek(map) == ?"importance";
-    assert Set.peekFront(map) == ?"technology";
-
-    assert Set.size(map) == 20;
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    assert Set.putBefore(map, thash, "independence", ?"decision") == true;
-    assert Set.putBefore(map, thash, "importance", ?"technology") == true;
-
-    assert Set.peek(map) == ?"assistance";
-    assert Set.peekFront(map) == ?"importance";
-
-    assert Set.size(map) == 20;
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     Set.add(map, thash, "xxx");
     assert Set.put(map, thash, "yyy") == false;
 
@@ -224,11 +204,11 @@ module {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    assert Set.pop(map) == ?"yyy";
-    assert Set.pop(map) == ?"xxx";
+    assert Set.pop(map, thash) == ?"yyy";
+    assert Set.pop(map, thash) == ?"xxx";
 
-    assert Set.popFront(map) == ?"bbb";
-    assert Set.popFront(map) == ?"aaa";
+    assert Set.popFront(map, thash) == ?"bbb";
+    assert Set.popFront(map, thash) == ?"aaa";
 
     assert Set.size(map) == 20;
 
@@ -248,11 +228,11 @@ module {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    assert Set.pop(map) == ?"suggestion";
-    assert Set.pop(map) == ?"topic";
+    assert Set.pop(map, thash) == ?"suggestion";
+    assert Set.pop(map, thash) == ?"topic";
 
-    assert Set.popFront(map) == ?"climate";
-    assert Set.popFront(map) == ?"language";
+    assert Set.popFront(map, thash) == ?"climate";
+    assert Set.popFront(map, thash) == ?"language";
 
     assert Set.size(map) == 16;
 

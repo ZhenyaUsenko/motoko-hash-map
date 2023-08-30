@@ -1,9 +1,11 @@
+import Array "mo:base/Array";
+import Debug "mo:base/Debug";
 import IC "mo:base/ExperimentalInternetComputer";
 import Map "./src/Map";
 import Prim "mo:prim";
 import Set "./src/Set";
 import TestMap "./test/Map";
-//import TestSet "./test/Set";
+import TestSet "./test/Set";
 
 actor Test {
   let { ihash; nhash; n32hash; n64hash; thash; phash; bhash; lhash } = Map;
@@ -11,11 +13,9 @@ actor Test {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public query func testPerf(): async [Text] {
-    let startSpace0 = Prim.rts_heap_size();
-
     let map = Map.new<Nat32, Nat32>();
 
-    let startSpace = Prim.rts_heap_size() - startSpace0:Nat;
+    let startSpace = Prim.rts_heap_size();
 
     let setCost = IC.countInstructions(func() {
       var i = 0:Nat32;
@@ -75,6 +75,32 @@ actor Test {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  public query func test(): async [Text] {
+    let map = Map.new<Nat32, Nat32>();
+
+    let array = Array.tabulate<(Nat, Nat)>(100000, func(i) = (i, i));
+
+    var i = 0:Nat32;
+
+    while (i != 100000) { Map.set(map, n32hash, i, i); i +%= 1 };
+
+    let startSpace = Prim.rts_heap_size();
+
+    let cost = IC.countInstructions(func() {
+      for (item in Map.keysFrom(map, n32hash, ?10:?Nat32)) {};
+    });
+
+    let space = Prim.rts_heap_size() - startSpace:Nat;
+
+    return [
+      "cost - " # debug_show(cost),
+      "---",
+      "space - " # debug_show(space),
+    ];
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   public query func heapSize(): async Nat {
     return Prim.rts_heap_size();
   };
@@ -83,6 +109,6 @@ actor Test {
 
   public query func runTests(): async () {
     TestMap.runTests();
-    //TestSet.runTests();
+    TestSet.runTests();
   };
 };
