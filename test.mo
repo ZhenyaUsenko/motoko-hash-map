@@ -87,7 +87,9 @@ actor Test {
     let startSpace = Prim.rts_heap_size();
 
     let cost = IC.countInstructions(func() {
-      for (item in Map.keysFrom(map, n32hash, ?10:?Nat32)) {};
+      var i = 0:Nat32;
+
+      while (i != 100000) { ignore Map.peek(map); i +%= 1 };
     });
 
     let space = Prim.rts_heap_size() - startSpace:Nat;
