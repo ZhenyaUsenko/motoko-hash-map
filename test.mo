@@ -6,12 +6,9 @@ import Prim "mo:prim";
 import Set "./src/Set";
 import TestMap "./test/Map";
 import TestSet "./test/Set";
+import { ihash; nhash; n32hash; n64hash; thash; phash; bhash; lhash } "./src/Map";
 
 actor Test {
-  let { ihash; nhash; n32hash; n64hash; thash; phash; bhash; lhash } = Map;
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   public query func testPerf(): async [Text] {
     let map = Map.new<Nat32, Nat32>();
 

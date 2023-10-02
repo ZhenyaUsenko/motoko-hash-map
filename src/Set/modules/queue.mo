@@ -41,7 +41,11 @@ module {
 
     let keys = data.0;
     let capacity = nat32(keys.size());
-    let targetKeyOpt = keys[nat((data.2[BACK] -% 1) % capacity)];
+
+    let bounds = data.2;
+    var back = (bounds[BACK] -% 1) % capacity;
+    let backNat = nat(back);
+    let targetKeyOpt = keys[backNat];
 
     let targetKey = switch (targetKeyOpt) { case (?key) key; case (_) trap("unreachable") };
 
@@ -52,8 +56,7 @@ module {
 
     loop if (index == NULL) {
       return null;
-    } else if (hashUtils.1(switch (keys[index]) { case (?key) key; case (_) trap("unreachable") }, targetKey)) {
-      let bounds = data.2;
+    } else if (index == backNat) {
       let newSize = bounds[SIZE] -% 1;
 
       bounds[SIZE] := newSize;
@@ -65,12 +68,8 @@ module {
       if (newSize < (capacity *% 3 +% 2) / 8) {
         rehash(map, hashUtils);
       } else {
-        var back = (bounds[BACK] -% 1) % capacity;
-
-        if (newSize != 0) {
-          while (switch (keys[nat((back -% 1) % capacity)]) { case (null) true; case (_) false }) {
-            back := (back -% 1) % capacity;
-          };
+        while (switch (keys[nat((back -% 1) % capacity)]) { case (null) true; case (_) false }) {
+          back := (back -% 1) % capacity;
         };
 
         bounds[BACK] := back;
@@ -90,7 +89,11 @@ module {
 
     let keys = data.0;
     let capacity = nat32(keys.size());
-    let targetKeyOpt = keys[nat((data.2[FRONT] +% 1) % capacity)];
+
+    let bounds = data.2;
+    var front = (bounds[FRONT] +% 1) % capacity;
+    let frontNat = nat(front);
+    let targetKeyOpt = keys[frontNat];
 
     let targetKey = switch (targetKeyOpt) { case (?key) key; case (_) trap("unreachable") };
 
@@ -101,8 +104,7 @@ module {
 
     loop if (index == NULL) {
       return null;
-    } else if (hashUtils.1(switch (keys[index]) { case (?key) key; case (_) trap("unreachable") }, targetKey)) {
-      let bounds = data.2;
+    } else if (index == frontNat) {
       let newSize = bounds[SIZE] -% 1;
 
       bounds[SIZE] := newSize;
@@ -114,12 +116,8 @@ module {
       if (newSize < (capacity *% 3 +% 2) / 8) {
         rehash(map, hashUtils);
       } else {
-        var front = (bounds[FRONT] +% 1) % capacity;
-
-        if (newSize != 0) {
-          while (switch (keys[nat((front +% 1) % capacity)]) { case (null) true; case (_) false }) {
-            front := (front +% 1) % capacity;
-          };
+        while (switch (keys[nat((front +% 1) % capacity)]) { case (null) true; case (_) false }) {
+          front := (front +% 1) % capacity;
         };
 
         bounds[FRONT] := front;
@@ -139,7 +137,11 @@ module {
 
     let keys = data.0;
     let capacity = nat32(keys.size());
-    let targetKeyOpt = keys[nat((data.2[BACK] -% 1) % capacity)];
+
+    let bounds = data.2;
+    var back = (bounds[BACK] -% 1) % capacity;
+    let backNat = nat(back);
+    let targetKeyOpt = keys[backNat];
 
     let targetKey = switch (targetKeyOpt) { case (?key) key; case (_) trap("unreachable") };
 
@@ -150,35 +152,28 @@ module {
 
     loop if (index == NULL) {
       return null;
-    } else {
-      let key = keys[index];
+    } else if (index == backNat) {
+      let front = bounds[FRONT];
+      let frontNat = nat(front);
 
-      if (hashUtils.1(switch (key) { case (?key) key; case (_) trap("unreachable") }, targetKey)) {
-        let bounds = data.2;
-        let back = bounds[BACK];
-        let backNat = nat(back);
+      bounds[FRONT] := (front -% 1) % capacity;
 
-        bounds[BACK] := (back +% 1) % capacity;
+      keys[frontNat] := targetKeyOpt;
+      indexes[frontNat] := indexes[index];
+      keys[index] := null;
 
-        keys[backNat] := key;
-        indexes[backNat] := indexes[index];
-        keys[index] := null;
+      if (prevIndex == NULL) indexes[hashIndex] := frontNat else indexes[prevIndex] := frontNat;
 
-        if (prevIndex == NULL) indexes[hashIndex] := backNat else indexes[prevIndex] := backNat;
-
-        var front = (bounds[FRONT] +% 1) % capacity;
-
-        while (switch (keys[nat((front +% 1) % capacity)]) { case (null) true; case (_) false }) {
-          front := (front +% 1) % capacity;
-        };
-
-        bounds[FRONT] := front;
-
-        return targetKeyOpt;
-      } else {
-        prevIndex := index;
-        index := indexes[index];
+      while (switch (keys[nat((back -% 1) % capacity)]) { case (null) true; case (_) false }) {
+        back := (back -% 1) % capacity;
       };
+
+      bounds[BACK] := back;
+
+      return targetKeyOpt;
+    } else {
+      prevIndex := index;
+      index := indexes[index];
     };
   };
 
@@ -189,7 +184,11 @@ module {
 
     let keys = data.0;
     let capacity = nat32(keys.size());
-    let targetKeyOpt = keys[nat((data.2[FRONT] +% 1) % capacity)];
+
+    let bounds = data.2;
+    var front = (bounds[FRONT] +% 1) % capacity;
+    let frontNat = nat(front);
+    let targetKeyOpt = keys[frontNat];
 
     let targetKey = switch (targetKeyOpt) { case (?key) key; case (_) trap("unreachable") };
 
@@ -200,35 +199,28 @@ module {
 
     loop if (index == NULL) {
       return null;
-    } else {
-      let key = keys[index];
+    } else if (index == frontNat) {
+      let back = bounds[BACK];
+      let backNat = nat(back);
 
-      if (hashUtils.1(switch (key) { case (?key) key; case (_) trap("unreachable") }, targetKey)) {
-        let bounds = data.2;
-        let front = bounds[FRONT];
-        let frontNat = nat(front);
+      bounds[BACK] := (back +% 1) % capacity;
 
-        bounds[FRONT] := (front -% 1) % capacity;
+      keys[backNat] := targetKeyOpt;
+      indexes[backNat] := indexes[index];
+      keys[index] := null;
 
-        keys[frontNat] := key;
-        indexes[frontNat] := indexes[index];
-        keys[index] := null;
+      if (prevIndex == NULL) indexes[hashIndex] := backNat else indexes[prevIndex] := backNat;
 
-        if (prevIndex == NULL) indexes[hashIndex] := frontNat else indexes[prevIndex] := frontNat;
-
-        var back = (bounds[BACK] -% 1) % capacity;
-
-        while (switch (keys[nat((back -% 1) % capacity)]) { case (null) true; case (_) false }) {
-          back := (back -% 1) % capacity;
-        };
-
-        bounds[BACK] := back;
-
-        return targetKeyOpt;
-      } else {
-        prevIndex := index;
-        index := indexes[index];
+      while (switch (keys[nat((front +% 1) % capacity)]) { case (null) true; case (_) false }) {
+        front := (front +% 1) % capacity;
       };
+
+      bounds[FRONT] := front;
+
+      return targetKeyOpt;
+    } else {
+      prevIndex := index;
+      index := indexes[index];
     };
   };
 };

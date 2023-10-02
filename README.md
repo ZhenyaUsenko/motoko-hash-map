@@ -152,7 +152,7 @@ Map.delete(map, nhash, 1);
   - [**rehash**](#rehash-1)
 
 ## [**Iterator** interface description](#iterator-interface-description-1)
-- [Moving the pointer](#moving-the-pointer)
+- [Moving a pointer](#moving-a-pointer)
   - [**prev**](#prev)
   - [**next**](#next)
   - [**peekPrev**](#peekprev)
@@ -2599,7 +2599,7 @@ type Iter<T> = {
 };
 ```
 
-## Moving the pointer
+## Moving a pointer
 
 ### `prev`
 
