@@ -12,12 +12,12 @@ module {
     next: () -> ?T;
     peekPrev: () -> ?T;
     peekNext: () -> ?T;
+    movePrev: () -> Iter<T>;
+    moveNext: () -> Iter<T>;
     current: () -> ?T;
     started: () -> Bool;
     finished: () -> Bool;
     reset: () -> Iter<T>;
-    movePrev: () -> Iter<T>;
-    moveNext: () -> Iter<T>;
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

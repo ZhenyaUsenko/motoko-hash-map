@@ -12,13 +12,13 @@ module {
     hash := hash >> 30 ^ hash *% 0xbf58476d1ce4e5b9;
     hash := hash >> 27 ^ hash *% 0x94d049bb133111eb;
 
-    Prim.intToNat32Wrap(Prim.nat64ToNat(hash >> 31 ^ hash & 0x3fffffff));
+    Prim.nat64ToNat32(hash >> 31 ^ hash & 0x3fffffff);
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func hashInt8(key: Int8): Nat32 {
-    var hash = Prim.intToNat32Wrap(Prim.int8ToInt(key));
+    var hash = Prim.nat16ToNat32(Prim.nat8ToNat16(Prim.int8ToNat8(key)));
 
     hash := hash >> 16 ^ hash *% 0x21f0aaad;
     hash := hash >> 15 ^ hash *% 0x735a2d97;
@@ -29,7 +29,7 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func hashInt16(key: Int16): Nat32 {
-    var hash = Prim.intToNat32Wrap(Prim.int16ToInt(key));
+    var hash = Prim.nat16ToNat32(Prim.int16ToNat16(key));
 
     hash := hash >> 16 ^ hash *% 0x21f0aaad;
     hash := hash >> 15 ^ hash *% 0x735a2d97;
@@ -56,7 +56,7 @@ module {
     hash := hash >> 30 ^ hash *% 0xbf58476d1ce4e5b9;
     hash := hash >> 27 ^ hash *% 0x94d049bb133111eb;
 
-    Prim.intToNat32Wrap(Prim.nat64ToNat(hash >> 31 ^ hash & 0x3fffffff));
+    Prim.nat64ToNat32(hash >> 31 ^ hash & 0x3fffffff);
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -67,13 +67,13 @@ module {
     hash := hash >> 30 ^ hash *% 0xbf58476d1ce4e5b9;
     hash := hash >> 27 ^ hash *% 0x94d049bb133111eb;
 
-    Prim.intToNat32Wrap(Prim.nat64ToNat(hash >> 31 ^ hash & 0x3fffffff));
+    Prim.nat64ToNat32(hash >> 31 ^ hash & 0x3fffffff);
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func hashNat8(key: Nat8): Nat32 {
-    var hash = Prim.intToNat32Wrap(Prim.nat8ToNat(key));
+    var hash = Prim.nat16ToNat32(Prim.nat8ToNat16(key));
 
     hash := hash >> 16 ^ hash *% 0x21f0aaad;
     hash := hash >> 15 ^ hash *% 0x735a2d97;
@@ -84,7 +84,7 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func hashNat16(key: Nat16): Nat32 {
-    var hash = Prim.intToNat32Wrap(Prim.nat16ToNat(key));
+    var hash = Prim.nat16ToNat32(key);
 
     hash := hash >> 16 ^ hash *% 0x21f0aaad;
     hash := hash >> 15 ^ hash *% 0x735a2d97;
@@ -111,7 +111,7 @@ module {
     hash := hash >> 30 ^ hash *% 0xbf58476d1ce4e5b9;
     hash := hash >> 27 ^ hash *% 0x94d049bb133111eb;
 
-    Prim.intToNat32Wrap(Prim.nat64ToNat(hash >> 31 ^ hash & 0x3fffffff));
+    Prim.nat64ToNat32(hash >> 31 ^ hash & 0x3fffffff);
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -175,9 +175,14 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func combineHash<K1, K2>(hashUtils1: HashUtils<K1>, hashUtils2: HashUtils<K2>): HashUtils<(K1, K2)> {
+    let getHash1 = hashUtils1.0;
+    let getHash2 = hashUtils2.0;
+    let areEqual1 = hashUtils1.1;
+    let areEqual2 = hashUtils2.1;
+
     (
-      func(key) = (hashUtils1.0(key.0) +% hashUtils2.0(key.1)) & 0x3fffffff,
-      func(a, b) = hashUtils1.1(a.0, b.0) and hashUtils2.1(a.1, b.1),
+      func(key) = (getHash1(key.0) +% getHash2(key.1)) & 0x3fffffff,
+      func(a, b) = areEqual1(a.0, b.0) and areEqual2(a.1, b.1),
     )
   };
 

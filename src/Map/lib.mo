@@ -47,7 +47,7 @@ module {
 
   public let { get; has; contains } = Get;
 
-  public let { new; clear; make; size; empty } = Init;
+  public let { new; clear; size; empty; make } = Init;
 
   public let { keys; keysDesc; vals; valsDesc; entries; entriesDesc } = Iterate;
 

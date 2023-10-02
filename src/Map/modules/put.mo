@@ -1,7 +1,7 @@
 import Const "../const";
 import Types "../types";
 import { rehash } "./rehash";
-import { init; initFront } "./init";
+import { init; initFront; initUpdate; initUpdateFront } "./init";
 import { natToNat32 = nat32; nat32ToNat = nat; trap } "mo:prim";
 
 module {
@@ -276,7 +276,7 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func update<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, getNewValue: (K, ?V) -> ?V): ?V {
-    let data = switch (map[DATA]) { case (?data) data; case (_) return init(map, hashUtils, keyParam, getNewValue(keyParam, null)) };
+    let data = switch (map[DATA]) { case (?data) data; case (_) return initUpdate(map, hashUtils, keyParam, getNewValue) };
 
     let keys = data.0;
     let capacity = nat32(keys.size());
@@ -328,7 +328,7 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func updateFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, getNewValue: (K, ?V) -> ?V): ?V {
-    let data = switch (map[DATA]) { case (?data) data; case (_) return initFront(map, hashUtils, keyParam, getNewValue(keyParam, null)) };
+    let data = switch (map[DATA]) { case (?data) data; case (_) return initUpdateFront(map, hashUtils, keyParam, getNewValue) };
 
     let keys = data.0;
     let capacity = nat32(keys.size());
@@ -684,7 +684,7 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func updateMove<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, getNewValue: (K, ?V) -> ?V): ?V {
-    let data = switch (map[DATA]) { case (?data) data; case (_) return init(map, hashUtils, keyParam, getNewValue(keyParam, null)) };
+    let data = switch (map[DATA]) { case (?data) data; case (_) return initUpdate(map, hashUtils, keyParam, getNewValue) };
 
     let keys = data.0;
     let capacity = nat32(keys.size());
@@ -780,7 +780,7 @@ module {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public func updateMoveFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, keyParam: K, getNewValue: (K, ?V) -> ?V): ?V {
-    let data = switch (map[DATA]) { case (?data) data; case (_) return initFront(map, hashUtils, keyParam, getNewValue(keyParam, null)) };
+    let data = switch (map[DATA]) { case (?data) data; case (_) return initUpdateFront(map, hashUtils, keyParam, getNewValue) };
 
     let keys = data.0;
     let capacity = nat32(keys.size());

@@ -2,5 +2,5 @@
   dependencies = [
     "base",
   ],
-  compiler = Some "0.9.8",
+  compiler = Some "0.10.0",
 }

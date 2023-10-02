@@ -78,8 +78,6 @@ actor Test {
   public query func test(): async [Text] {
     let map = Map.new<Nat32, Nat32>();
 
-    let array = Array.tabulate<(Nat, Nat)>(100000, func(i) = (i, i));
-
     var i = 0:Nat32;
 
     while (i != 100000) { Map.set(map, n32hash, i, i); i +%= 1 };
@@ -89,7 +87,7 @@ actor Test {
     let cost = IC.countInstructions(func() {
       var i = 0:Nat32;
 
-      while (i != 100000) { ignore Map.peek(map); i +%= 1 };
+      ignore Map.toArrayMap<Nat32, Nat32, Nat32>(map, func(key, value) = ?value);
     });
 
     let space = Prim.rts_heap_size() - startSpace:Nat;

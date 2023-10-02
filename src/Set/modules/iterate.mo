@@ -98,29 +98,6 @@ module {
         };
       };
 
-      current = func(): ?K {
-        switch (dataOpt) {
-          case (?data) switch (data.0[nat(iterIndex)]) { case (null) null; case (key) key };
-          case (_) null;
-        };
-      };
-
-      started = func(): Bool {
-        started;
-      };
-
-      finished = func(): Bool {
-        started and (iterIndex == front or iterIndex == back);
-      };
-
-      reset = func(): Iter<K> {
-        started := false;
-
-        iterIndex := front;
-
-        iter;
-      };
-
       movePrev = func(): Iter<K> {
         started := true;
 
@@ -153,6 +130,29 @@ module {
 
           case (_) iter;
         };
+      };
+
+      current = func(): ?K {
+        switch (dataOpt) {
+          case (?data) switch (data.0[nat(iterIndex)]) { case (null) null; case (key) key };
+          case (_) null;
+        };
+      };
+
+      started = func(): Bool {
+        started;
+      };
+
+      finished = func(): Bool {
+        started and (iterIndex == front or iterIndex == back);
+      };
+
+      reset = func(): Iter<K> {
+        started := false;
+
+        iterIndex := front;
+
+        iter;
       };
     };
   };
@@ -238,29 +238,6 @@ module {
         };
       };
 
-      current = func(): ?K {
-        switch (dataOpt) {
-          case (?data) switch (data.0[nat(iterIndex)]) { case (null) null; case (key) key };
-          case (_) null;
-        };
-      };
-
-      started = func(): Bool {
-        started;
-      };
-
-      finished = func(): Bool {
-        started and (iterIndex == front or iterIndex == back);
-      };
-
-      reset = func(): Iter<K> {
-        started := false;
-
-        iterIndex := back;
-
-        iter;
-      };
-
       movePrev = func(): Iter<K> {
         started := true;
 
@@ -293,6 +270,29 @@ module {
 
           case (_) iter;
         };
+      };
+
+      current = func(): ?K {
+        switch (dataOpt) {
+          case (?data) switch (data.0[nat(iterIndex)]) { case (null) null; case (key) key };
+          case (_) null;
+        };
+      };
+
+      started = func(): Bool {
+        started;
+      };
+
+      finished = func(): Bool {
+        started and (iterIndex == front or iterIndex == back);
+      };
+
+      reset = func(): Iter<K> {
+        started := false;
+
+        iterIndex := back;
+
+        iter;
       };
     };
   };
@@ -391,29 +391,6 @@ module {
           };
         };
 
-        current = func(): ?K {
-          switch (dataOpt) {
-            case (?data) switch (data.0[nat(iterIndex)]) { case (null) null; case (key) key };
-            case (_) null;
-          };
-        };
-
-        started = func(): Bool {
-          started;
-        };
-
-        finished = func(): Bool {
-          started and (iterIndex == front or iterIndex == back);
-        };
-
-        reset = func(): Iter<K> {
-          started := false;
-
-          iterIndex := front;
-
-          iter;
-        };
-
         movePrev = func(): Iter<K> {
           started := true;
 
@@ -446,6 +423,29 @@ module {
 
             case (_) iter;
           };
+        };
+
+        current = func(): ?K {
+          switch (dataOpt) {
+            case (?data) switch (data.0[nat(iterIndex)]) { case (null) null; case (key) key };
+            case (_) null;
+          };
+        };
+
+        started = func(): Bool {
+          started;
+        };
+
+        finished = func(): Bool {
+          started and (iterIndex == front or iterIndex == back);
+        };
+
+        reset = func(): Iter<K> {
+          started := false;
+
+          iterIndex := front;
+
+          iter;
         };
       };
     } else {
@@ -547,29 +547,6 @@ module {
           };
         };
 
-        current = func(): ?K {
-          switch (dataOpt) {
-            case (?data) switch (data.0[nat(iterIndex)]) { case (null) null; case (key) key };
-            case (_) null;
-          };
-        };
-
-        started = func(): Bool {
-          started;
-        };
-
-        finished = func(): Bool {
-          started and (iterIndex == front or iterIndex == back);
-        };
-
-        reset = func(): Iter<K> {
-          started := false;
-
-          iterIndex := back;
-
-          iter;
-        };
-
         movePrev = func(): Iter<K> {
           started := true;
 
@@ -602,6 +579,29 @@ module {
 
             case (_) iter;
           };
+        };
+
+        current = func(): ?K {
+          switch (dataOpt) {
+            case (?data) switch (data.0[nat(iterIndex)]) { case (null) null; case (key) key };
+            case (_) null;
+          };
+        };
+
+        started = func(): Bool {
+          started;
+        };
+
+        finished = func(): Bool {
+          started and (iterIndex == front or iterIndex == back);
+        };
+
+        reset = func(): Iter<K> {
+          started := false;
+
+          iterIndex := back;
+
+          iter;
         };
       };
     } else {

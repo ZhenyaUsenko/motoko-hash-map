@@ -24,7 +24,6 @@ module {
     let data = switch (map[DATA]) { case (?data) data; case (_) return [var null] };
 
     let capacity = nat32(data.0.size());
-    let lastHashIndex = capacity -% 1;
 
     let newMap = [var null]:Map<K, V2>;
 
@@ -53,7 +52,6 @@ module {
     let data = switch (map[DATA]) { case (?data) data; case (_) return [var null] };
 
     let capacity = nat32(data.0.size());
-    let lastHashIndex = capacity -% 1;
 
     let newMap = [var null]:Map<K, V2>;
 
@@ -82,7 +80,6 @@ module {
     let data = switch (map[DATA]) { case (?data) data; case (_) return [var null] };
 
     let capacity = nat32(data.0.size());
-    let lastHashIndex = capacity -% 1;
 
     let newMap = [var null]:Map<K, V>;
 
@@ -114,7 +111,6 @@ module {
     let data = switch (map[DATA]) { case (?data) data; case (_) return [var null] };
 
     let capacity = nat32(data.0.size());
-    let lastHashIndex = capacity -% 1;
 
     let newMap = [var null]:Map<K, V>;
 
@@ -151,7 +147,7 @@ module {
     let capacity = nat32(keys.size());
     let capacityNat = nat(capacity);
 
-    var lastIndex = capacity *% 2;
+    let lastIndex = capacity *% 2;
     var index = capacity;
 
     let newKeys = initArray<?K>(capacityNat, null);
@@ -208,7 +204,7 @@ module {
     let capacityNat = nat(capacity);
 
     let lastHashIndex = capacity -% 1;
-    var lastIndex = capacity *% 2;
+    let lastIndex = capacity *% 2;
     var index = capacity;
 
     let newKeys = initArray<?K>(capacityNat, null);
@@ -265,7 +261,7 @@ module {
     let capacity = nat32(keys.size());
     let capacityNat = nat(capacity);
 
-    var lastIndex = capacity *% 2;
+    let lastIndex = capacity *% 2;
     var index = capacity;
 
     let newKeys = initArray<?K>(capacityNat, null);
@@ -322,7 +318,7 @@ module {
     let capacityNat = nat(capacity);
 
     let lastHashIndex = capacity -% 1;
-    var lastIndex = capacity *% 2;
+    let lastIndex = capacity *% 2;
     var index = capacity;
 
     let newKeys = initArray<?K>(capacityNat, null);
