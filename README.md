@@ -1,4 +1,4 @@
-```ts
+```motoko
 import Map "mo:map/Map";
 import { nhash } "mo:map/Map";
 
@@ -205,7 +205,7 @@ Map.delete(map, nhash, 1);
 
 # **Map** Interface description
 
-```ts
+```motoko
 type Map<K, V> = [var ?(
   keys: [var ?K],
   values: [var ?V],
@@ -218,8 +218,8 @@ type Map<K, V> = [var ?(
 
 ### `new`
 
-```ts
-func new<K, V>(): Map<K, V>
+```motoko
+func new<K, V>(): Map<K, V>;
 ```
 
 Creates and returns an empty **Map**. Empty **Map** has a special optimization and takes only **12 bytes** of space. The **Map** structure will be initialized only after the insertion of the **first** **entry** and will occupy minimum **112 bytes**.
@@ -235,8 +235,8 @@ Creates and returns an empty **Map**. Empty **Map** has a special optimization a
 
 ### `clear`
 
-```ts
-func clear<K, V>(map: Map<K, V>): ()
+```motoko
+func clear<K, V>(map: Map<K, V>): ();
 ```
 
 Removes all entries from the **Map**.
@@ -252,8 +252,8 @@ Removes all entries from the **Map**.
 
 ### `size`
 
-```ts
-func size<K, V>(map: Map<K, V>): Nat
+```motoko
+func size<K, V>(map: Map<K, V>): Nat;
 ```
 
 Returns the amount of entries in the **Map**.
@@ -269,8 +269,8 @@ Returns the amount of entries in the **Map**.
 
 ### `empty`
 
-```ts
-func empty<K, V>(map: Map<K, V>): Bool
+```motoko
+func empty<K, V>(map: Map<K, V>): Bool;
 ```
 
 Returns a boolean indicating whether the **Map** is empty (has zero entries) or not.
@@ -286,8 +286,8 @@ Returns a boolean indicating whether the **Map** is empty (has zero entries) or 
 
 ### `make`
 
-```ts
-func make<K, V>(hashUtils: HashUtils<K>, key: K, value: V): Map<K, V>
+```motoko
+func make<K, V>(hashUtils: HashUtils<K>, key: K, value: V): Map<K, V>;
 ```
 
 Creates a new **Map**, initializes it with the single provided **(key, value)** pair and returns the **Map**. The minimum amount of space a non-empty **Map** can occupy is **112 bytes**.
@@ -305,8 +305,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the first argument.
 
 ### `put`
 
-```ts
-func put<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: V): ?V
+```motoko
+func put<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: V): ?V;
 ```
 
 If the provided **key** is not present in the **Map**, inserts a new **(key, value)** pair at the **back** of the **Map** and returns **null**.
@@ -332,8 +332,8 @@ Most **put** calls will not cause any space allocations and will be executed in 
 
 ### `putFront`
 
-```ts
-func putFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: V): ?V
+```motoko
+func putFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: V): ?V;
 ```
 
 If the provided **key** is not present in the **Map**, inserts a new **(key, value)** pair at the **front** of the **Map** and returns **null**.
@@ -359,8 +359,8 @@ Most **putFront** calls will not cause any space allocations and will be execute
 
 ### `set`
 
-```ts
-func set<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: V): ()
+```motoko
+func set<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: V): ();
 ```
 
 If the provided **key** is not present in the **Map**, inserts a new **(key, value)** pair at the **back** of the **Map**.
@@ -388,8 +388,8 @@ Most **set** calls will not cause any space allocations and will be executed in 
 
 ### `setFront`
 
-```ts
-func setFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: V): ()
+```motoko
+func setFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: V): ();
 ```
 
 If the provided **key** is not present in the **Map**, inserts a new **(key, value)** pair at the **front** of the **Map**.
@@ -417,8 +417,8 @@ Most **setFront** calls will not cause any space allocations and will be execute
 
 ### `add`
 
-```ts
-func add<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: V): ?V
+```motoko
+func add<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: V): ?V;
 ```
 
 If the provided **key** is not present in the **Map**, inserts a new **(key, value)** pair at the **back** of the **Map** and returns **null**.
@@ -444,8 +444,8 @@ Most **add** calls will not cause any space allocations and will be executed in 
 
 ### `addFront`
 
-```ts
-func addFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: V): ?V
+```motoko
+func addFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: V): ?V;
 ```
 
 If the provided **key** is not present in the **Map**, inserts a new **(key, value)** pair at the **front** of the **Map** and returns **null**.
@@ -471,8 +471,8 @@ Most **addFront** calls will not cause any space allocations and will be execute
 
 ### `replace`
 
-```ts
-func replace<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: V): ?V
+```motoko
+func replace<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: V): ?V;
 ```
 
 If the provided **key** is not present in the **Map**, does no modifications and returns **null**.
@@ -494,8 +494,8 @@ If the **Map** is empty, on the first insert the **Map** structure will be initi
 
 ### `update`
 
-```ts
-func update<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, getNewValue: (K, ?V) -> ?V): ?V
+```motoko
+func update<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, getNewValue: (K, ?V) -> ?V): ?V;
 ```
 
 If the provided **key** is not present in the **Map**, calls the provided **getNewValue** function with **(key, null)** parameters. If the result of **getNewValue** call is a **value**, inserts a new **(key, value)** pair at the **back** of the **Map** and returns the new **value**. If the result of **getNewValue** call is **null**, does no modifications and returns **null**.
@@ -521,8 +521,8 @@ Most **update** calls will not cause any space allocations and will be executed 
 
 ### `updateFront`
 
-```ts
-func updateFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, getNewValue: (K, ?V) -> ?V): ?V
+```motoko
+func updateFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, getNewValue: (K, ?V) -> ?V): ?V;
 ```
 
 If the provided **key** is not present in the **Map**, calls the provided **getNewValue** function with **(key, null)** parameters. If the result of **getNewValue** call is a **value**, inserts a new **(key, value)** pair at the **front** of the **Map** and returns the new **value**. If the result of **getNewValue** call is **null**, does no modifications and returns **null**.
@@ -548,8 +548,8 @@ Most **updateFront** calls will not cause any space allocations and will be exec
 
 ### `putMove`
 
-```ts
-func putMove<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: ?V): ?V
+```motoko
+func putMove<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: ?V): ?V;
 ```
 
 If the provided **key** is not present in the **Map**, checks the optional **value** parameter. If the provided optional **value** is a **value**, inserts a new **(key, value)** pair at the **back** of the **Map** and returns **null**. If the provided optional **value** is **null**, does no modifications and returns **null**.
@@ -577,8 +577,8 @@ Most **putMove** calls will not cause any space allocations and will be executed
 
 ### `putMoveFront`
 
-```ts
-func putMoveFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: ?V): ?V
+```motoko
+func putMoveFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: ?V): ?V;
 ```
 
 If the provided **key** is not present in the **Map**, checks the optional **value** parameter. If the provided optional **value** is a **value**, inserts a new **(key, value)** pair at the **front** of the **Map** and returns **null**. If the provided optional **value** is **null**, does no modifications and returns **null**.
@@ -606,8 +606,8 @@ Most **putMoveFront** calls will not cause any space allocations and will be exe
 
 ### `replaceMove`
 
-```ts
-func replaceMove<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: ?V): ?V
+```motoko
+func replaceMove<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: ?V): ?V;
 ```
 
 If the provided **key** is not present in the **Map**, does no modifications and returns **null**.
@@ -635,8 +635,8 @@ Most **replaceMove** calls will not cause any space allocations and will be exec
 
 ### `replaceMoveFront`
 
-```ts
-func replaceMoveFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: ?V): ?V
+```motoko
+func replaceMoveFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, value: ?V): ?V;
 ```
 
 If the provided **key** is not present in the **Map**, does no modifications and returns **null**.
@@ -664,8 +664,8 @@ Most **replaceMoveFront** calls will not cause any space allocations and will be
 
 ### `updateMove`
 
-```ts
-func updateMove<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, getNewValue: (K, ?V) -> ?V): ?V
+```motoko
+func updateMove<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, getNewValue: (K, ?V) -> ?V): ?V;
 ```
 
 If the provided **key** is not present in the **Map**, calls the provided **getNewValue** function with **(key, null)** parameters. If the result of **getNewValue** call is a **value**, inserts a new **(key, value)** pair at the **back** of the **Map** and returns the new **value**. If the result of **getNewValue** call is **null**, does no modifications and returns **null**.
@@ -693,8 +693,8 @@ Most **updateMove** calls will not cause any space allocations and will be execu
 
 ### `updateMoveFront`
 
-```ts
-func updateMoveFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, getNewValue: (K, ?V) -> ?V): ?V
+```motoko
+func updateMoveFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K, getNewValue: (K, ?V) -> ?V): ?V;
 ```
 
 If the provided **key** is not present in the **Map**, calls the provided **getNewValue** function with **(key, null)** parameters. If the result of **getNewValue** call is a **value**, inserts a new **(key, value)** pair at the **front** of the **Map** and returns the new **value**. If the result of **getNewValue** call is **null**, does no modifications and returns **null**.
@@ -722,8 +722,8 @@ Most **updateMoveFront** calls will not cause any space allocations and will be 
 
 ### `get`
 
-```ts
-func get<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K): ?V
+```motoko
+func get<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K): ?V;
 ```
 
 If the provided **key** is present in the **Map**, returns the corresponding **value**. Otherwise, returns **null**.
@@ -741,8 +741,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
 ### `has`
 
-```ts
-func has<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K): Bool
+```motoko
+func has<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K): Bool;
 ```
 
 If the provided **key** is present in the **Map**, returns **true**. Otherwise, returns **false**.
@@ -760,8 +760,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
 ### `contains`
 
-```ts
-func contains<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K): ?Bool
+```motoko
+func contains<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K): ?Bool;
 ```
 
 If the **Map** is empty, returns **null**.
@@ -781,8 +781,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
 ### `remove`
 
-```ts
-func remove<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K): ?V
+```motoko
+func remove<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K): ?V;
 ```
 
 If the provided **key** is not present in the **Map**, does no modifications and returns **null**.
@@ -806,8 +806,8 @@ If [**rehash**](#rehash) is not called and the **entry** is being removed from t
 
 ### `delete`
 
-```ts
-func delete<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K): ()
+```motoko
+func delete<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: K): ();
 ```
 
 If the provided **key** is not present in the **Map**, does no modifications.
@@ -833,8 +833,8 @@ If [**rehash**](#rehash) is not called and the **entry** is being removed from t
 
 ### `peek`
 
-```ts
-func peek<K, V>(map: Map<K, V>): ?(K, V)
+```motoko
+func peek<K, V>(map: Map<K, V>): ?(K, V);
 ```
 
 If the **Map** is not empty, returns the **last** **(key, value)** pair in the **Map**. Otherwise, returns **null**.
@@ -850,8 +850,8 @@ If the **Map** is not empty, returns the **last** **(key, value)** pair in the *
 
 ### `peekFront`
 
-```ts
-func peekFront<K, V>(map: Map<K, V>): ?(K, V)
+```motoko
+func peekFront<K, V>(map: Map<K, V>): ?(K, V);
 ```
 
 If the **Map** is not empty, returns the **first** **(key, value)** pair in the **Map**. Otherwise, returns **null**.
@@ -867,8 +867,8 @@ If the **Map** is not empty, returns the **first** **(key, value)** pair in the 
 
 ### `pop`
 
-```ts
-func pop<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>): ?(K, V)
+```motoko
+func pop<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>): ?(K, V);
 ```
 
 If the **Map** is empty, does no modifications and returns **null**.
@@ -892,8 +892,8 @@ If [**rehash**](#rehash) is not called, all holes after the new **last** **entry
 
 ### `popFront`
 
-```ts
-func popFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>): ?(K, V)
+```motoko
+func popFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>): ?(K, V);
 ```
 
 If the **Map** is empty, does no modifications and returns **null**.
@@ -917,8 +917,8 @@ If [**rehash**](#rehash) is not called, all holes before the new **first** **ent
 
 ### `cycle`
 
-```ts
-func cycle<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>): ?(K, V)
+```motoko
+func cycle<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>): ?(K, V);
 ```
 
 If the **Map** is empty, does no modifications and returns **null**.
@@ -938,8 +938,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
 ### `cycleFront`
 
-```ts
-func cycleFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>): ?(K, V)
+```motoko
+func cycleFront<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>): ?(K, V);
 ```
 
 If the **Map** is empty, does no modifications and returns **null**.
@@ -959,8 +959,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
 ### `mapFilter`
 
-```ts
-func mapFilter<K, V1, V2>(map: Map<K, V1>, hashUtils: HashUtils<K>, mapEntry: (K, V1) -> ?V2): Map<K, V2>
+```motoko
+func mapFilter<K, V1, V2>(map: Map<K, V1>, hashUtils: HashUtils<K>, mapEntry: (K, V1) -> ?V2): Map<K, V2>;
 ```
 
 For every **entry** in the **Map**, from the **first** to the **last** **entry** (in ascending order) calls the provided **mapEntry** function with **(key, value)** parameters. Constructs a new **Map** with all **(key, mapEntry result)** pairs for which **mapEntry** returned **non-null** result (in the same order **mapEntry** was called). Skips all entries for which **acceptEntry** returned **null**. Returns the new **Map**.
@@ -976,8 +976,8 @@ For every **entry** in the **Map**, from the **first** to the **last** **entry**
 
 ### `mapFilterDesc`
 
-```ts
-func mapFilterDesc<K, V1, V2>(map: Map<K, V1>, hashUtils: HashUtils<K>, mapEntry: (K, V1) -> ?V2): Map<K, V2>
+```motoko
+func mapFilterDesc<K, V1, V2>(map: Map<K, V1>, hashUtils: HashUtils<K>, mapEntry: (K, V1) -> ?V2): Map<K, V2>;
 ```
 
 For every **entry** in the **Map**, from the **last** to the **first** **entry** (in descending order) calls the provided **mapEntry** function with **(key, value)** parameters. Constructs a new **Map** with all **(key, mapEntry result)** pairs for which **mapEntry** returned **non-null** result (in the same order **mapEntry** was called). Skips all entries for which **acceptEntry** returned **null**. Returns the new **Map**.
@@ -993,8 +993,8 @@ For every **entry** in the **Map**, from the **last** to the **first** **entry**
 
 ### `filter`
 
-```ts
-func filter<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, acceptEntry: (K, V) -> Bool): Map<K, V>
+```motoko
+func filter<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, acceptEntry: (K, V) -> Bool): Map<K, V>;
 ```
 
 For every **entry** in the **Map**, from the **first** to the **last** **entry** (in ascending order) calls the provided **acceptEntry** function with **(key, value)** parameters. Constructs a new **Map** with all **(key, value)** pairs for which **acceptEntry** returned **true** (in the same order **acceptEntry** was called). Skips all entries for which **acceptEntry** returned **false**. Returns the new **Map**.
@@ -1010,8 +1010,8 @@ For every **entry** in the **Map**, from the **first** to the **last** **entry**
 
 ### `filterDesc`
 
-```ts
-func filterDesc<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, acceptEntry: (K, V) -> Bool): Map<K, V>
+```motoko
+func filterDesc<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, acceptEntry: (K, V) -> Bool): Map<K, V>;
 ```
 
 For every **entry** in the **Map**, from the **last** to the **first** **entry** (in descending order) calls the provided **acceptEntry** function with **(key, value)** parameters. Constructs a new **Map** with all **(key, value)** pairs for which **acceptEntry** returned **true** (in the same order **acceptEntry** was called). Skips all entries for which **acceptEntry** returned **false**. Returns the new **Map**.
@@ -1027,8 +1027,8 @@ For every **entry** in the **Map**, from the **last** to the **first** **entry**
 
 ### `map`
 
-```ts
-func map<K, V1, V2>(map: Map<K, V1>, hashUtils: HashUtils<K>, mapEntry: (K, V1) -> V2): Map<K, V2>
+```motoko
+func map<K, V1, V2>(map: Map<K, V1>, hashUtils: HashUtils<K>, mapEntry: (K, V1) -> V2): Map<K, V2>;
 ```
 
 For every **entry** in the **Map**, from the **first** to the **last** **entry** (in ascending order) calls the provided **mapEntry** function with **(key, value)** parameters. Constructs a new **Map** with all **(key, mapEntry result)** pairs (in the same order **mapEntry** was called). Returns the new **Map**.
@@ -1044,8 +1044,8 @@ For every **entry** in the **Map**, from the **first** to the **last** **entry**
 
 ### `mapDesc`
 
-```ts
-func mapDesc<K, V1, V2>(map: Map<K, V1>, hashUtils: HashUtils<K>, mapEntry: (K, V1) -> V2): Map<K, V2>
+```motoko
+func mapDesc<K, V1, V2>(map: Map<K, V1>, hashUtils: HashUtils<K>, mapEntry: (K, V1) -> V2): Map<K, V2>;
 ```
 
 For every **entry** in the **Map**, from the **last** to the **first** **entry** (in descending order) calls the provided **mapEntry** function with **(key, value)** parameters. Constructs a new **Map** with all **(key, mapEntry result)** pairs (in the same order **mapEntry** was called). Returns the new **Map**.
@@ -1061,8 +1061,8 @@ For every **entry** in the **Map**, from the **last** to the **first** **entry**
 
 ### `clone`
 
-```ts
-func clone<K, V>(map: Map<K, V>): Map<K, V>
+```motoko
+func clone<K, V>(map: Map<K, V>): Map<K, V>;
 ```
 
 Iterates through the **Map** from the **first** to the **last** **entry** (in ascending order) and copies each **entry** into the new **Map** (in the order of iteration). Returns the new **Map**.
@@ -1078,8 +1078,8 @@ Iterates through the **Map** from the **first** to the **last** **entry** (in as
 
 ### `cloneDesc`
 
-```ts
-func cloneDesc<K, V>(map: Map<K, V>): Map<K, V>
+```motoko
+func cloneDesc<K, V>(map: Map<K, V>): Map<K, V>;
 ```
 
 Iterates through the **Map** from the **last** to the **first** **entry** (in descending order) and copies each **entry** into the new **Map** (in the order of iteration). Returns the new **Map**.
@@ -1095,8 +1095,8 @@ Iterates through the **Map** from the **last** to the **first** **entry** (in de
 
 ### `keys`
 
-```ts
-func keys<K, V>(map: Map<K, V>): Iter<K>
+```motoko
+func keys<K, V>(map: Map<K, V>): Iter<K>;
 ```
 
 Creates an iterator object over the keys of the **Map** which starts at the **first** **key** and ends at the **last** **key**. The iterator can be used to iterate over all keys of the **Map** with **for in** loop in ascending order. Or you can call any method on the iterator object directly. The interface of an iterator object is described in the section [**Iterator** interface description](#iterator-interface-description).
@@ -1114,8 +1114,8 @@ All **Map** iterators are reusable, meaning after returning **null** once (at th
 
 ### `keysDesc`
 
-```ts
-func keysDesc<K, V>(map: Map<K, V>): Iter<K>
+```motoko
+func keysDesc<K, V>(map: Map<K, V>): Iter<K>;
 ```
 
 Creates an iterator object over the keys of the **Map** which starts at the **last** **key** and ends at the **first** **key**. The iterator can be used to iterate over all keys of the **Map** with **for in** loop in descending order. Or you can call any method on the iterator object directly. The interface of an iterator object is described in the section [**Iterator** interface description](#iterator-interface-description).
@@ -1133,8 +1133,8 @@ All **Map** iterators are reusable, meaning after returning **null** once (at th
 
 ### `vals`
 
-```ts
-func vals<K, V>(map: Map<K, V>): Iter<V>
+```motoko
+func vals<K, V>(map: Map<K, V>): Iter<V>;
 ```
 
 Creates an iterator object over the values of the **Map** which starts at the **first** **value** and ends at the **last** **value**. The iterator can be used to iterate over all values of the **Map** with **for in** loop in ascending order. Or you can call any method on the iterator object directly. The interface of an iterator object is described in the section [**Iterator** interface description](#iterator-interface-description).
@@ -1152,8 +1152,8 @@ All **Map** iterators are reusable, meaning after returning **null** once (at th
 
 ### `valsDesc`
 
-```ts
-func valsDesc<K, V>(map: Map<K, V>): Iter<V>
+```motoko
+func valsDesc<K, V>(map: Map<K, V>): Iter<V>;
 ```
 
 Creates an iterator object over the values of the **Map** which starts at the **last** **value** and ends at the **first** **value**. The iterator can be used to iterate over all values of the **Map** with **for in** loop in descending order. Or you can call any method on the iterator object directly. The interface of an iterator object is described in the section [**Iterator** interface description](#iterator-interface-description).
@@ -1171,8 +1171,8 @@ All **Map** iterators are reusable, meaning after returning **null** once (at th
 
 ### `entries`
 
-```ts
-func entries<K, V>(map: Map<K, V>): Iter<(K, V)>
+```motoko
+func entries<K, V>(map: Map<K, V>): Iter<(K, V)>;
 ```
 
 Creates an iterator object over the **(key, value)** pairs of the **Map** which starts at the **first** **entry** and ends at the **last** **entry**. The iterator can be used to iterate over all **(key, value)** pairs of the **Map** with **for in** loop in ascending order. Or you can call any method on the iterator object directly. The interface of an iterator object is described in the section [**Iterator** interface description](#iterator-interface-description).
@@ -1190,8 +1190,8 @@ All **Map** iterators are reusable, meaning after returning **null** once (at th
 
 ### `entriesDesc`
 
-```ts
-func entriesDesc<K, V>(map: Map<K, V>): Iter<(K, V)>
+```motoko
+func entriesDesc<K, V>(map: Map<K, V>): Iter<(K, V)>;
 ```
 
 Creates an iterator object over the **(key, value)** pairs of the **Map** which starts at the **last** **entry** and ends at the **first** **entry**. The iterator can be used to iterate over all **(key, value)** pairs of the **Map** with **for in** loop in descending order. Or you can call any method on the iterator object directly. The interface of an iterator object is described in the section [**Iterator** interface description](#iterator-interface-description).
@@ -1209,8 +1209,8 @@ All **Map** iterators are reusable, meaning after returning **null** once (at th
 
 ### `keysFrom`
 
-```ts
-func keysFrom<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: ?K): Iter<K>
+```motoko
+func keysFrom<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: ?K): Iter<K>;
 ```
 
 If the optional **key** parameter is present, performs a search for it in the **Map**. Creates an iterator object over the keys of the **Map** which starts at the **key** after the found **key** (if the optional **key** parameter is present and found) or the **first** **key** (if the optional **key** parameter is either not present or not found) and ends at the **last** **key**. The iterator can be used to iterate over all keys of the **Map** after the specified **key** with **for in** loop in ascending order. Or you can call any method on the iterator object directly. The interface of an iterator object is described in the section [**Iterator** interface description](#iterator-interface-description).
@@ -1232,8 +1232,8 @@ All **Map** iterators are reusable, meaning after returning **null** once (at th
 
 ### `keysFromDesc`
 
-```ts
-func keysFromDesc<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: ?K): Iter<K>
+```motoko
+func keysFromDesc<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: ?K): Iter<K>;
 ```
 
 If the optional **key** parameter is present, performs a search for it in the **Map**. Creates an iterator object over the keys of the **Map** which starts at the **key** before the found **key** (if the optional **key** parameter is present and found) or the **last** **key** (if the optional **key** parameter is either not present or not found) and ends at the **first** **key**. The iterator can be used to iterate over all keys of the **Map** before the specified **key** with **for in** loop in descending order. Or you can call any method on the iterator object directly. The interface of an iterator object is described in the section [**Iterator** interface description](#iterator-interface-description).
@@ -1255,8 +1255,8 @@ All **Map** iterators are reusable, meaning after returning **null** once (at th
 
 ### `valsFrom`
 
-```ts
-func valsFrom<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: ?K): Iter<V>
+```motoko
+func valsFrom<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: ?K): Iter<V>;
 ```
 
 If the optional **key** parameter is present, performs a search for it in the **Map**. Creates an iterator object over the values of the **Map** which starts at the **value** after the **value** associated with the found **key** (if the optional **key** parameter is present and found) or the **first** **value** (if the optional **key** parameter is either not present or not found) and ends at the **last** **value**. The iterator can be used to iterate over all values of the **Map** after the **value** associated with the specified **key** with **for in** loop in ascending order. Or you can call any method on the iterator object directly. The interface of an iterator object is described in the section [**Iterator** interface description](#iterator-interface-description).
@@ -1278,8 +1278,8 @@ All **Map** iterators are reusable, meaning after returning **null** once (at th
 
 ### `valsFromDesc`
 
-```ts
-func valsFromDesc<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: ?K): Iter<V>
+```motoko
+func valsFromDesc<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: ?K): Iter<V>;
 ```
 
 If the optional **key** parameter is present, performs a search for it in the **Map**. Creates an iterator object over the values of the **Map** which starts at the **value** before the **value** associated with the found **key** (if the optional **key** parameter is present and found) or the **last** **value** (if the optional **key** parameter is either not present or not found) and ends at the **first** **value**. The iterator can be used to iterate over all values of the **Map** before the **value** associated with the specified **key** with **for in** loop in descending order. Or you can call any method on the iterator object directly. The interface of an iterator object is described in the section [**Iterator** interface description](#iterator-interface-description).
@@ -1301,8 +1301,8 @@ All **Map** iterators are reusable, meaning after returning **null** once (at th
 
 ### `entriesFrom`
 
-```ts
-func entriesFrom<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: ?K): Iter<(K, V)>
+```motoko
+func entriesFrom<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: ?K): Iter<(K, V)>;
 ```
 
 If the optional **key** parameter is present, performs a search for it in the **Map**. Creates an iterator object over the **(key, value)** pairs of the **Map** which starts at the **entry** after the **entry** with the found **key** (if the optional **key** parameter is present and found) or the **first** **entry** (if the optional **key** parameter is either not present or not found) and ends at the **last** **entry**. The iterator can be used to iterate over all **(key, value)** pairs of the **Map** after the **entry** with the specified **key** with **for in** loop in ascending order. Or you can call any method on the iterator object directly. The interface of an iterator object is described in the section [**Iterator** interface description](#iterator-interface-description).
@@ -1324,8 +1324,8 @@ All **Map** iterators are reusable, meaning after returning **null** once (at th
 
 ### `entriesFromDesc`
 
-```ts
-func entriesFromDesc<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: ?K): Iter<(K, V)>
+```motoko
+func entriesFromDesc<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>, key: ?K): Iter<(K, V)>;
 ```
 
 If the optional **key** parameter is present, performs a search for it in the **Map**. Creates an iterator object over the **(key, value)** pairs of the **Map** which starts at the **entry** before the **entry** with the found **key** (if the optional **key** parameter is present and found) or the **last** **entry** (if the optional **key** parameter is either not present or not found) and ends at the **first** **entry**. The iterator can be used to iterate over all **(key, value)** pairs of the **Map** before the **entry** with the specified **key** with **for in** loop in descending order. Or you can call any method on the iterator object directly. The interface of an iterator object is described in the section [**Iterator** interface description](#iterator-interface-description).
@@ -1347,8 +1347,8 @@ All **Map** iterators are reusable, meaning after returning **null** once (at th
 
 ### `find`
 
-```ts
-func find<K, V>(map: Map<K, V>, acceptEntry: (K, V) -> Bool): ?(K, V)
+```motoko
+func find<K, V>(map: Map<K, V>, acceptEntry: (K, V) -> Bool): ?(K, V);
 ```
 
 For every **entry** in the **Map**, from the **first** to the **last** **entry** (in ascending order) calls the provided **acceptEntry** function with **(key, value)** parameters until the **acceptEntry** function returns **true**. If **true** is returned, returns the current **(key, value)** pair immediately. If **acceptEntry** didn't return **true** for any **entry**, returns **null**.
@@ -1364,8 +1364,8 @@ For every **entry** in the **Map**, from the **first** to the **last** **entry**
 
 ### `findDesc`
 
-```ts
-func findDesc<K, V>(map: Map<K, V>, acceptEntry: (K, V) -> Bool): ?(K, V)
+```motoko
+func findDesc<K, V>(map: Map<K, V>, acceptEntry: (K, V) -> Bool): ?(K, V);
 ```
 
 For every **entry** in the **Map**, from the **last** to the **first** **entry** (in descending order) calls the provided **acceptEntry** function with **(key, value)** parameters until the **acceptEntry** function returns **true**. If **true** is returned, returns the current **(key, value)** pair immediately. If **acceptEntry** didn't return **true** for any **entry**, returns **null**.
@@ -1381,8 +1381,8 @@ For every **entry** in the **Map**, from the **last** to the **first** **entry**
 
 ### `some`
 
-```ts
-func some<K, V>(map: Map<K, V>, acceptEntry: (K, V) -> Bool): Bool
+```motoko
+func some<K, V>(map: Map<K, V>, acceptEntry: (K, V) -> Bool): Bool;
 ```
 
 For every **entry** in the **Map**, from the **first** to the **last** **entry** (in ascending order) calls the provided **acceptEntry** function with **(key, value)** parameters until the **acceptEntry** function returns **true**. If **true** is returned, returns **true** immediately. If **acceptEntry** didn't return **true** for any **entry**, returns **false**.
@@ -1398,8 +1398,8 @@ For every **entry** in the **Map**, from the **first** to the **last** **entry**
 
 ### `someDesc`
 
-```ts
-func someDesc<K, V>(map: Map<K, V>, acceptEntry: (K, V) -> Bool): Bool
+```motoko
+func someDesc<K, V>(map: Map<K, V>, acceptEntry: (K, V) -> Bool): Bool;
 ```
 
 For every **entry** in the **Map**, from the **last** to the **first** **entry** (in descending order) calls the provided **acceptEntry** function with **(key, value)** parameters until the **acceptEntry** function returns **true**. If **true** is returned, returns **true** immediately. If **acceptEntry** didn't return **true** for any **entry**, returns **false**.
@@ -1415,8 +1415,8 @@ For every **entry** in the **Map**, from the **last** to the **first** **entry**
 
 ### `every`
 
-```ts
-func every<K, V>(map: Map<K, V>, acceptEntry: (K, V) -> Bool): Bool
+```motoko
+func every<K, V>(map: Map<K, V>, acceptEntry: (K, V) -> Bool): Bool;
 ```
 
 For every **entry** in the **Map**, from the **first** to the **last** **entry** (in ascending order) calls the provided **acceptEntry** function with **(key, value)** parameters until the **acceptEntry** function returns **false**. If **false** is returned, returns **false** immediately. If **acceptEntry** didn't return **false** for any **entry**, returns **true**.
@@ -1432,8 +1432,8 @@ For every **entry** in the **Map**, from the **first** to the **last** **entry**
 
 ### `everyDesc`
 
-```ts
-func everyDesc<K, V>(map: Map<K, V>, acceptEntry: (K, V) -> Bool): Bool
+```motoko
+func everyDesc<K, V>(map: Map<K, V>, acceptEntry: (K, V) -> Bool): Bool;
 ```
 
 For every **entry** in the **Map**, from the **last** to the **first** **entry** (in descending order) calls the provided **acceptEntry** function with **(key, value)** parameters until the **acceptEntry** function returns **false**. If **false** is returned, returns **false** immediately. If **acceptEntry** didn't return **false** for any **entry**, returns **true**.
@@ -1449,8 +1449,8 @@ For every **entry** in the **Map**, from the **last** to the **first** **entry**
 
 ### `forEach`
 
-```ts
-func forEach<K, V>(map: Map<K, V>, mapEntry: (K, V) -> ()): ()
+```motoko
+func forEach<K, V>(map: Map<K, V>, mapEntry: (K, V) -> ()): ();
 ```
 
 For every **entry** in the **Map**, from the **first** to the **last** **entry** (in ascending order) calls the provided **mapEntry** function with **(key, value)** parameters.
@@ -1466,8 +1466,8 @@ For every **entry** in the **Map**, from the **first** to the **last** **entry**
 
 ### `forEachDesc`
 
-```ts
-func forEachDesc<K, V>(map: Map<K, V>, mapEntry: (K, V) -> ()): ()
+```motoko
+func forEachDesc<K, V>(map: Map<K, V>, mapEntry: (K, V) -> ()): ();
 ```
 
 For every **entry** in the **Map**, from the **last** to the **first** **entry** (in descending order) calls the provided **mapEntry** function with **(key, value)** parameters.
@@ -1483,8 +1483,8 @@ For every **entry** in the **Map**, from the **last** to the **first** **entry**
 
 ### `fromIter`
 
-```ts
-func fromIter<K, V>(iter: IterNext<(K, V)>, hashUtils: HashUtils<K>): Map<K, V>
+```motoko
+func fromIter<K, V>(iter: IterNext<(K, V)>, hashUtils: HashUtils<K>): Map<K, V>;
 ```
 
 Creates a new empty **Map**. For every **(key, value)** pair in the iterator, inserts the **(key, value)** pair at the **back** of the **Map** if the **key** is not present in the **Map**. If the **key** is present in the **Map**, replaces the **previous value** with the **value** and moves the **entry** to the **back** of the **Map** (if it's not there yet). Returns the new **Map**.
@@ -1502,8 +1502,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
 ### `fromIterDesc`
 
-```ts
-func fromIterDesc<K, V>(iter: IterNext<(K, V)>, hashUtils: HashUtils<K>): Map<K, V>
+```motoko
+func fromIterDesc<K, V>(iter: IterNext<(K, V)>, hashUtils: HashUtils<K>): Map<K, V>;
 ```
 
 Creates a new empty **Map**. For every **(key, value)** pair in the iterator, inserts the **(key, value)** pair at the **front** of the **Map** if the **key** is not present in the **Map**. If the **key** is present in the **Map**, replaces the **previous value** with the **value** and moves the **entry** to the **front** of the **Map** (if it's not there yet). Returns the new **Map**.
@@ -1521,8 +1521,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
 ### `fromIterMap`
 
-```ts
-func fromIterMap<K, V, T>(iter: IterNext<T>, hashUtils: HashUtils<K>, mapItem: (T) -> ?(K, V)): Map<K, V>
+```motoko
+func fromIterMap<K, V, T>(iter: IterNext<T>, hashUtils: HashUtils<K>, mapItem: (T) -> ?(K, V)): Map<K, V>;
 ```
 
 Creates a new empty **Map**. For every item in the iterator, calls the provided **mapItem** function. For every item **mapItem** returned a **(key, value)** pair for, inserts the **(key, value)** pair at the **back** of the **Map** if the **key** is not present in the **Map**. If the **key** is present in the **Map**, replaces the **previous value** with the **value** and moves the **entry** to the **back** of the **Map** (if it's not there yet). Skips all items **mapItem** returned **null** for. Returns the new **Map**.
@@ -1540,8 +1540,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
 ### `fromIterMapDesc`
 
-```ts
-func fromIterMapDesc<K, V, T>(iter: IterNext<T>, hashUtils: HashUtils<K>, mapItem: (T) -> ?(K, V)): Map<K, V>
+```motoko
+func fromIterMapDesc<K, V, T>(iter: IterNext<T>, hashUtils: HashUtils<K>, mapItem: (T) -> ?(K, V)): Map<K, V>;
 ```
 
 Creates a new empty **Map**. For every item in the iterator, calls the provided **mapItem** function. For every item **mapItem** returned a **(key, value)** pair for, inserts the **(key, value)** pair at the **front** of the **Map** if the **key** is not present in the **Map**. If the **key** is present in the **Map**, replaces the **previous value** with the **value** and moves the **entry** to the **front** of the **Map** (if it's not there yet). Skips all items **mapItem** returned **null** for. Returns the new **Map**.
@@ -1559,8 +1559,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
 ### `toArray`
 
-```ts
-func toArray<K, V>(map: Map<K, V>): [(K, V)]
+```motoko
+func toArray<K, V>(map: Map<K, V>): [(K, V)];
 ```
 
 Constructs a new array with all **(key, value)** pairs present in the **Map**, from the **first** to the **last** **entry** (in ascending order). Returns the array.
@@ -1576,8 +1576,8 @@ Constructs a new array with all **(key, value)** pairs present in the **Map**, f
 
 ### `toArrayDesc`
 
-```ts
-func toArrayDesc<K, V>(map: Map<K, V>): [(K, V)]
+```motoko
+func toArrayDesc<K, V>(map: Map<K, V>): [(K, V)];
 ```
 
 Constructs a new array with all **(key, value)** pairs present in the **Map**, from the **last** to the **first** **entry** (in descending order). Returns the array.
@@ -1593,8 +1593,8 @@ Constructs a new array with all **(key, value)** pairs present in the **Map**, f
 
 ### `toArrayMap`
 
-```ts
-func toArrayMap<K, V, T>(map: Map<K, V>, mapEntry: (K, V) -> ?T): [T]
+```motoko
+func toArrayMap<K, V, T>(map: Map<K, V>, mapEntry: (K, V) -> ?T): [T];
 ```
 
 For every **entry** in the **Map**, from the **first** to the **last** **entry** (in ascending order), calls the provided **mapEntry** function with **(key, value)** parameters. Constructs a new array with all **non-null** **mapEntry result** items (in the same order **mapEntry** was called). Skips all **null** **mapEntry result** items. Returns the array.
@@ -1610,8 +1610,8 @@ For every **entry** in the **Map**, from the **first** to the **last** **entry**
 
 ### `toArrayMapDesc`
 
-```ts
-func toArrayMapDesc<K, V, T>(map: Map<K, V>, mapEntry: (K, V) -> ?T): [T]
+```motoko
+func toArrayMapDesc<K, V, T>(map: Map<K, V>, mapEntry: (K, V) -> ?T): [T];
 ```
 
 For every **entry** in the **Map**, from the **last** to the **first** **entry** (in descending order), calls the provided **mapEntry** function with **(key, value)** parameters. Constructs a new array with all **non-null** **mapEntry result** items (in the same order **mapEntry** was called). Skips all **null** **mapEntry result** items. Returns the array.
@@ -1627,8 +1627,8 @@ For every **entry** in the **Map**, from the **last** to the **first** **entry**
 
 ### `rehash`
 
-```ts
-func rehash<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>): ()
+```motoko
+func rehash<K, V>(map: Map<K, V>, hashUtils: HashUtils<K>): ();
 ```
 
 If the **Map** is empty, returns immediately. Otherwise, allocates additional space, equal to the **power of 2** that can hold **8/7** of all current entries (either half, equal or double the current capacity) times **16 bytes**. Moves all entries to the new allocated space, while eliminating the holes (unused array indexes). Recalculates the hash table (mapping from a hash to the first **entry** in a bucket). Recalculates bucket chains (entries that have equal **hash % Map size** result in a collision and end up in the same bucket). To perform those recalculation, hashes for all keys must also be recalculated.
@@ -1646,7 +1646,7 @@ This method is usually called under the hood on inserts (when the **Map** is ful
 
 # **Set** interface description
 
-```ts
+```motoko
 type Set<K> = [var ?(
   keys: [var ?K],
   indexes: [var Nat],
@@ -1658,8 +1658,8 @@ type Set<K> = [var ?(
 
 ### `new`
 
-```ts
-func new<K>(): Set<K>
+```motoko
+func new<K>(): Set<K>;
 ```
 
 Creates and returns an empty **Set**. Empty **Set** has a special optimization and takes only **12 bytes** of space. The **Set** structure will be initialized only after the insertion of the **first** **key** and will occupy minimum **92 bytes**.
@@ -1675,8 +1675,8 @@ Creates and returns an empty **Set**. Empty **Set** has a special optimization a
 
 ### `clear`
 
-```ts
-func clear<K>(set: Set<K>): ()
+```motoko
+func clear<K>(set: Set<K>): ();
 ```
 
 Removes all keys from the **Set**.
@@ -1692,8 +1692,8 @@ Removes all keys from the **Set**.
 
 ### `size`
 
-```ts
-func size<K>(set: Set<K>): Nat
+```motoko
+func size<K>(set: Set<K>): Nat;
 ```
 
 Returns the amount of keys in the **Set**.
@@ -1709,8 +1709,8 @@ Returns the amount of keys in the **Set**.
 
 ### `empty`
 
-```ts
-func empty<K>(set: Set<K>): Bool
+```motoko
+func empty<K>(set: Set<K>): Bool;
 ```
 
 Returns a boolean indicating whether the **Set** is empty (has zero keys) or not.
@@ -1726,8 +1726,8 @@ Returns a boolean indicating whether the **Set** is empty (has zero keys) or not
 
 ### `make`
 
-```ts
-func make<K>(hashUtils: HashUtils<K>, key: K): Set<K>
+```motoko
+func make<K>(hashUtils: HashUtils<K>, key: K): Set<K>;
 ```
 
 Creates a new **Set**, initializes it with the single provided **key** and returns the **Set**. The minimum amount of space a non-empty **Set** can occupy is **92 bytes**.
@@ -1745,8 +1745,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the first argument.
 
 ### `put`
 
-```ts
-func put<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): Bool
+```motoko
+func put<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): Bool;
 ```
 
 If the provided **key** is not present in the **Set**, inserts it as the **last** **key** of the **Set** and returns **false**.
@@ -1772,8 +1772,8 @@ Most **put** calls will not cause any space allocations and will be executed in 
 
 ### `putFront`
 
-```ts
-func putFront<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): Bool
+```motoko
+func putFront<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): Bool;
 ```
 
 If the provided **key** is not present in the **Set**, inserts it as the **first** **key** of the **Set** and returns **false**.
@@ -1799,8 +1799,8 @@ Most **putFront** calls will not cause any space allocations and will be execute
 
 ### `add`
 
-```ts
-func add<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): ()
+```motoko
+func add<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): ();
 ```
 
 If the provided **key** is not present in the **Set**, inserts it as the **last** **key** of the **Set**.
@@ -1828,8 +1828,8 @@ Most **add** calls will not cause any space allocations and will be executed in 
 
 ### `addFront`
 
-```ts
-func addFront<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): ()
+```motoko
+func addFront<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): ();
 ```
 
 If the provided **key** is not present in the **Set**, inserts it as the **first** **key** of the **Set**.
@@ -1857,8 +1857,8 @@ Most **addFront** calls will not cause any space allocations and will be execute
 
 ### `putMove`
 
-```ts
-func putMove<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): Bool
+```motoko
+func putMove<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): Bool;
 ```
 
 If the provided **key** is not present in the **Set**, inserts it as the **last** **key** of the **Set** and returns **false**.
@@ -1886,8 +1886,8 @@ Most **putMove** calls will not cause any space allocations and will be executed
 
 ### `putMoveFront`
 
-```ts
-func putMoveFront<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): Bool
+```motoko
+func putMoveFront<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): Bool;
 ```
 
 If the provided **key** is not present in the **Set**, inserts it as the **first** **key** of the **Set** and returns **false**.
@@ -1915,8 +1915,8 @@ Most **putMoveFront** calls will not cause any space allocations and will be exe
 
 ### `has`
 
-```ts
-func has<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): Bool
+```motoko
+func has<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): Bool;
 ```
 
 If the provided **key** is present in the **Set**, returns **true**. Otherwise, returns **false**.
@@ -1934,8 +1934,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
 ### `contains`
 
-```ts
-func contains<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): ?Bool
+```motoko
+func contains<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): ?Bool;
 ```
 
 If the **Set** is empty, returns **null**.
@@ -1955,8 +1955,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
 ### `remove`
 
-```ts
-func remove<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): Bool
+```motoko
+func remove<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): Bool;
 ```
 
 If the provided **key** is not present in the **Set**, does no modifications and returns **false**.
@@ -1980,8 +1980,8 @@ If [**rehash**](#rehash-1) is not called and the **key** is being removed from t
 
 ### `delete`
 
-```ts
-func delete<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): ()
+```motoko
+func delete<K>(set: Set<K>, hashUtils: HashUtils<K>, key: K): ();
 ```
 
 If the provided **key** is not present in the **Set**, does no modifications.
@@ -2007,8 +2007,8 @@ If [**rehash**](#rehash-1) is not called and the **key** is being removed from t
 
 ### `peek`
 
-```ts
-func peek<K>(set: Set<K>): ?K
+```motoko
+func peek<K>(set: Set<K>): ?K;
 ```
 
 If the **Set** is not empty, returns the **last** **key** in the **Set**. Otherwise, returns **null**.
@@ -2024,8 +2024,8 @@ If the **Set** is not empty, returns the **last** **key** in the **Set**. Otherw
 
 ### `peekFront`
 
-```ts
-func peekFront<K>(set: Set<K>): ?K
+```motoko
+func peekFront<K>(set: Set<K>): ?K;
 ```
 
 If the **Set** is not empty, returns the **first** **key** in the **Set**. Otherwise, returns **null**.
@@ -2041,8 +2041,8 @@ If the **Set** is not empty, returns the **first** **key** in the **Set**. Other
 
 ### `pop`
 
-```ts
-func pop<K>(set: Set<K>, hashUtils: HashUtils<K>): ?K
+```motoko
+func pop<K>(set: Set<K>, hashUtils: HashUtils<K>): ?K;
 ```
 
 If the **Set** is empty, does no modifications and returns **null**.
@@ -2066,8 +2066,8 @@ If [**rehash**](#rehash-1) is not called, all holes after the new **last** **key
 
 ### `popFront`
 
-```ts
-func popFront<K>(set: Set<K>, hashUtils: HashUtils<K>): ?K
+```motoko
+func popFront<K>(set: Set<K>, hashUtils: HashUtils<K>): ?K;
 ```
 
 If the **Set** is empty, does no modifications and returns **null**.
@@ -2091,8 +2091,8 @@ If [**rehash**](#rehash-1) is not called, all holes before the new **first** **k
 
 ### `cycle`
 
-```ts
-func cycle<K>(set: Set<K>, hashUtils: HashUtils<K>): ?K
+```motoko
+func cycle<K>(set: Set<K>, hashUtils: HashUtils<K>): ?K;
 ```
 
 If the **Set** is empty, does no modifications and returns **null**.
@@ -2112,8 +2112,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
 ### `cycleFront`
 
-```ts
-func cycleFront<K>(set: Set<K>, hashUtils: HashUtils<K>): ?K
+```motoko
+func cycleFront<K>(set: Set<K>, hashUtils: HashUtils<K>): ?K;
 ```
 
 If the **Set** is empty, does no modifications and returns **null**.
@@ -2133,8 +2133,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
 ### `filter`
 
-```ts
-func filter<K>(set: Set<K>, hashUtils: HashUtils<K>, acceptKey: (K) -> Bool): Set<K>
+```motoko
+func filter<K>(set: Set<K>, hashUtils: HashUtils<K>, acceptKey: (K) -> Bool): Set<K>;
 ```
 
 For every **key** in the **Set**, from the **first** to the **last** **key** (in ascending order) calls the provided **acceptKey** function. Constructs a new **Set** with all keys for which **acceptKey** returned **true** (in the same order **acceptKey** was called). Skips all keys for which **acceptKey** returned **false**. Returns the new **Set**.
@@ -2150,8 +2150,8 @@ For every **key** in the **Set**, from the **first** to the **last** **key** (in
 
 ### `filterDesc`
 
-```ts
-func filterDesc<K>(set: Set<K>, hashUtils: HashUtils<K>, acceptKey: (K) -> Bool): Set<K>
+```motoko
+func filterDesc<K>(set: Set<K>, hashUtils: HashUtils<K>, acceptKey: (K) -> Bool): Set<K>;
 ```
 
 For every **key** in the **Set**, from the **last** to the **first** **key** (in descending order) calls the provided **acceptKey** function. Constructs a new **Set** with all keys for which **acceptKey** returned **true** (in the same order **acceptKey** was called). Skips all keys for which **acceptKey** returned **false**. Returns the new **Set**.
@@ -2167,8 +2167,8 @@ For every **key** in the **Set**, from the **last** to the **first** **key** (in
 
 ### `clone`
 
-```ts
-func clone<K>(set: Set<K>): Set<K>
+```motoko
+func clone<K>(set: Set<K>): Set<K>;
 ```
 
 Iterates through the **Set** from the **first** to the **last** **key** (in ascending order) and copies each **key** into the new **Set** (in the order of iteration). Returns the new **Set**.
@@ -2184,8 +2184,8 @@ Iterates through the **Set** from the **first** to the **last** **key** (in asce
 
 ### `cloneDesc`
 
-```ts
-func cloneDesc<K>(set: Set<K>): Set<K>
+```motoko
+func cloneDesc<K>(set: Set<K>): Set<K>;
 ```
 
 Iterates through the **Set** from the **last** to the **first** **key** (in descending order) and copies each **key** into the new **Set** (in the order of iteration). Returns the new **Set**.
@@ -2201,8 +2201,8 @@ Iterates through the **Set** from the **last** to the **first** **key** (in desc
 
 ### `keys`
 
-```ts
-func keys<K>(set: Set<K>): Iter<K>
+```motoko
+func keys<K>(set: Set<K>): Iter<K>;
 ```
 
 Creates an iterator object over the keys of the **Set** which starts at the **first** **key** and ends at the **last** **key**. The iterator can be used to iterate over all keys of the **Set** with **for in** loop in ascending order. Or you can call any method on the iterator object directly. The interface of an iterator object is described in the section [**Iterator** interface description](#iterator-interface-description).
@@ -2220,8 +2220,8 @@ All **Set** iterators are reusable, meaning after returning **null** once (at th
 
 ### `keysDesc`
 
-```ts
-func keysDesc<K>(set: Set<K>): Iter<K>
+```motoko
+func keysDesc<K>(set: Set<K>): Iter<K>;
 ```
 
 Creates an iterator object over the keys of the **Set** which starts at the **last** **key** and ends at the **first** **key**. The iterator can be used to iterate over all keys of the **Set** with **for in** loop in descending order. Or you can call any method on the iterator object directly. The interface of an iterator object is described in the section [**Iterator** interface description](#iterator-interface-description).
@@ -2239,8 +2239,8 @@ All **Set** iterators are reusable, meaning after returning **null** once (at th
 
 ### `keysFrom`
 
-```ts
-func keysFrom<K>(set: Set<K>, hashUtils: HashUtils<K>, key: ?K): Iter<K>
+```motoko
+func keysFrom<K>(set: Set<K>, hashUtils: HashUtils<K>, key: ?K): Iter<K>;
 ```
 
 If the optional **key** parameter is present, performs a search for it in the **Set**. Creates an iterator object over the keys of the **Set** which starts at the **key** after the found **key** (if the optional **key** parameter is present and found) or the **first** **key** (if the optional **key** parameter is either not present or not found) and ends at the **last** **key**. The iterator can be used to iterate over all keys of the **Set** after the specified **key** with **for in** loop in ascending order. Or you can call any method on the iterator object directly. The interface of an iterator object is described in the section [**Iterator** interface description](#iterator-interface-description).
@@ -2262,8 +2262,8 @@ All **Set** iterators are reusable, meaning after returning **null** once (at th
 
 ### `keysFromDesc`
 
-```ts
-func keysFromDesc<K>(set: Set<K>, hashUtils: HashUtils<K>, key: ?K): Iter<K>
+```motoko
+func keysFromDesc<K>(set: Set<K>, hashUtils: HashUtils<K>, key: ?K): Iter<K>;
 ```
 
 If the optional **key** parameter is present, performs a search for it in the **Set**. Creates an iterator object over the keys of the **Set** which starts at the **key** before the found **key** (if the optional **key** parameter is present and found) or the **last** **key** (if the optional **key** parameter is either not present or not found) and ends at the **first** **key**. The iterator can be used to iterate over all keys of the **Set** before the specified **key** with **for in** loop in descending order. Or you can call any method on the iterator object directly. The interface of an iterator object is described in the section [**Iterator** interface description](#iterator-interface-description).
@@ -2285,8 +2285,8 @@ All **Set** iterators are reusable, meaning after returning **null** once (at th
 
 ### `find`
 
-```ts
-func find<K>(set: Set<K>, acceptKey: (K) -> Bool): ?K
+```motoko
+func find<K>(set: Set<K>, acceptKey: (K) -> Bool): ?K;
 ```
 
 For every **key** in the **Set**, from the **first** to the **last** **key** (in ascending order) calls the provided **acceptKey** function until the **acceptKey** function returns **true**. If **true** is returned, returns the current **key** immediately. If **acceptKey** didn't return **true** for any **key**, returns **null**.
@@ -2302,8 +2302,8 @@ For every **key** in the **Set**, from the **first** to the **last** **key** (in
 
 ### `findDesc`
 
-```ts
-func findDesc<K>(set: Set<K>, acceptKey: (K) -> Bool): ?K
+```motoko
+func findDesc<K>(set: Set<K>, acceptKey: (K) -> Bool): ?K;
 ```
 
 For every **key** in the **Set**, from the **last** to the **first** **key** (in descending order) calls the provided **acceptKey** function until the **acceptKey** function returns **true**. If **true** is returned, returns the current **key** immediately. If **acceptKey** didn't return **true** for any **key**, returns **null**.
@@ -2319,8 +2319,8 @@ For every **key** in the **Set**, from the **last** to the **first** **key** (in
 
 ### `some`
 
-```ts
-func some<K>(set: Set<K>, acceptKey: (K) -> Bool): Bool
+```motoko
+func some<K>(set: Set<K>, acceptKey: (K) -> Bool): Bool;
 ```
 
 For every **key** in the **Set**, from the **first** to the **last** **key** (in ascending order) calls the provided **acceptKey** function until the **acceptKey** function returns **true**. If **true** is returned, returns **true** immediately. If **acceptKey** didn't return **true** for any **key**, returns **false**.
@@ -2336,8 +2336,8 @@ For every **key** in the **Set**, from the **first** to the **last** **key** (in
 
 ### `someDesc`
 
-```ts
-func someDesc<K>(set: Set<K>, acceptKey: (K) -> Bool): Bool
+```motoko
+func someDesc<K>(set: Set<K>, acceptKey: (K) -> Bool): Bool;
 ```
 
 For every **key** in the **Set**, from the **last** to the **first** **key** (in descending order) calls the provided **acceptKey** function until the **acceptKey** function returns **true**. If **true** is returned, returns **true** immediately. If **acceptKey** didn't return **true** for any **key**, returns **false**.
@@ -2353,8 +2353,8 @@ For every **key** in the **Set**, from the **last** to the **first** **key** (in
 
 ### `every`
 
-```ts
-func every<K>(set: Set<K>, acceptKey: (K) -> Bool): Bool
+```motoko
+func every<K>(set: Set<K>, acceptKey: (K) -> Bool): Bool;
 ```
 
 For every **key** in the **Set**, from the **first** to the **last** **key** (in ascending order) calls the provided **acceptKey** function until the **acceptKey** function returns **false**. If **false** is returned, returns **false** immediately. If **acceptKey** didn't return **false** for any **key**, returns **true**.
@@ -2370,8 +2370,8 @@ For every **key** in the **Set**, from the **first** to the **last** **key** (in
 
 ### `everyDesc`
 
-```ts
-func everyDesc<K>(set: Set<K>, acceptKey: (K) -> Bool): Bool
+```motoko
+func everyDesc<K>(set: Set<K>, acceptKey: (K) -> Bool): Bool;
 ```
 
 For every **key** in the **Set**, from the **last** to the **first** **key** (in descending order) calls the provided **acceptKey** function until the **acceptKey** function returns **false**. If **false** is returned, returns **false** immediately. If **acceptKey** didn't return **false** for any **key**, returns **true**.
@@ -2387,8 +2387,8 @@ For every **key** in the **Set**, from the **last** to the **first** **key** (in
 
 ### `forEach`
 
-```ts
-func forEach<K>(set: Set<K>, mapKey: (K) -> ()): ()
+```motoko
+func forEach<K>(set: Set<K>, mapKey: (K) -> ()): ();
 ```
 
 For every **key** in the **Set**, from the **first** to the **last** **key** (in ascending order) calls the provided **mapKey** function.
@@ -2404,8 +2404,8 @@ For every **key** in the **Set**, from the **first** to the **last** **key** (in
 
 ### `forEachDesc`
 
-```ts
-func forEachDesc<K>(set: Set<K>, mapKey: (K) -> ()): ()
+```motoko
+func forEachDesc<K>(set: Set<K>, mapKey: (K) -> ()): ();
 ```
 
 For every **key** in the **Set**, from the **last** to the **first** **key** (in descending order) calls the provided **mapKey** function.
@@ -2421,8 +2421,8 @@ For every **key** in the **Set**, from the **last** to the **first** **key** (in
 
 ### `fromIter`
 
-```ts
-func fromIter<K>(iter: IterNext<K>, hashUtils: HashUtils<K>): Set<K>
+```motoko
+func fromIter<K>(iter: IterNext<K>, hashUtils: HashUtils<K>): Set<K>;
 ```
 
 Creates a new empty **Set**. For every **key** in the iterator, inserts the **key** at the **back** of the **Set** if the **key** is not present in the **Set**. If the **key** is present in the **Set**, moves the **key** to the **back** of the **Set** (if it's not there yet). Returns the new **Set**.
@@ -2440,8 +2440,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
 ### `fromIterDesc`
 
-```ts
-func fromIterDesc<K>(iter: IterNext<K>, hashUtils: HashUtils<K>): Set<K>
+```motoko
+func fromIterDesc<K>(iter: IterNext<K>, hashUtils: HashUtils<K>): Set<K>;
 ```
 
 Creates a new empty **Set**. For every **key** in the iterator, inserts the **key** at the **front** of the **Set** if the **key** is not present in the **Set**. If the **key** is present in the **Set**, moves the **key** to the **front** of the **Set** (if it's not there yet). Returns the new **Set**.
@@ -2459,8 +2459,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
 ### `fromIterMap`
 
-```ts
-func fromIterMap<K, T>(iter: IterNext<T>, hashUtils: HashUtils<K>, mapItem: (T) -> ?K): Set<K>
+```motoko
+func fromIterMap<K, T>(iter: IterNext<T>, hashUtils: HashUtils<K>, mapItem: (T) -> ?K): Set<K>;
 ```
 
 Creates a new empty **Set**. For every item in the iterator, calls the provided **mapItem** function. For every item **mapItem** returned a **key** for, inserts the **key** at the **back** of the **Set** if the **key** is not present in the **Set**. If the **key** is present in the **Set**, moves the **key** to the **back** of the **Set** (if it's not there yet). Skips all items **mapItem** returned **null** for. Returns the new **Set**.
@@ -2478,8 +2478,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
 ### `fromIterMapDesc`
 
-```ts
-func fromIterMapDesc<K, T>(iter: IterNext<T>, hashUtils: HashUtils<K>, mapItem: (T) -> ?K): Set<K>
+```motoko
+func fromIterMapDesc<K, T>(iter: IterNext<T>, hashUtils: HashUtils<K>, mapItem: (T) -> ?K): Set<K>;
 ```
 
 Creates a new empty **Set**. For every item in the iterator, calls the provided **mapItem** function. For every item **mapItem** returned a **key** for, inserts the **key** at the **front** of the **Set** if the **key** is not present in the **Set**. If the **key** is present in the **Set**, moves the **key** to the **front** of the **Set** (if it's not there yet). Skips all items **mapItem** returned **null** for. Returns the new **Set**.
@@ -2497,8 +2497,8 @@ Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
 ### `toArray`
 
-```ts
-func toArray<K>(set: Set<K>): [K]
+```motoko
+func toArray<K>(set: Set<K>): [K];
 ```
 
 Constructs a new array with all keys present in the **Set**, from the **first** to the **last** **key** (in ascending order). Returns the array.
@@ -2514,8 +2514,8 @@ Constructs a new array with all keys present in the **Set**, from the **first** 
 
 ### `toArrayDesc`
 
-```ts
-func toArrayDesc<K>(set: Set<K>): [K]
+```motoko
+func toArrayDesc<K>(set: Set<K>): [K];
 ```
 
 Constructs a new array with all keys present in the **Set**, from the **last** to the **first** **key** (in descending order). Returns the array.
@@ -2531,8 +2531,8 @@ Constructs a new array with all keys present in the **Set**, from the **last** t
 
 ### `toArrayMap`
 
-```ts
-func toArrayMap<K, T>(set: Set<K>, mapKey: (K) -> ?T): [T]
+```motoko
+func toArrayMap<K, T>(set: Set<K>, mapKey: (K) -> ?T): [T];
 ```
 
 For every **key** in the **Set**, from the **first** to the **last** **key** (in ascending order), calls the provided **mapKey** function. Constructs a new array with all **non-null** **mapKey result** items (in the same order **mapKey** was called). Skips all **null** **mapKey result** items. Returns the array.
@@ -2548,8 +2548,8 @@ For every **key** in the **Set**, from the **first** to the **last** **key** (in
 
 ### `toArrayMapDesc`
 
-```ts
-func toArrayMapDesc<K, T>(set: Set<K>, mapKey: (K) -> ?T): [T]
+```motoko
+func toArrayMapDesc<K, T>(set: Set<K>, mapKey: (K) -> ?T): [T];
 ```
 
 For every **key** in the **Set**, from the **last** to the **first** **key** (in descending order), calls the provided **mapKey** function. Constructs a new array with all **non-null** **mapKey result** items (in the same order **mapKey** was called). Skips all **null** **mapKey result** items. Returns the array.
@@ -2565,8 +2565,8 @@ For every **key** in the **Set**, from the **last** to the **first** **key** (in
 
 ### `rehash`
 
-```ts
-func rehash<K>(set: Set<K>, hashUtils: HashUtils<K>): ()
+```motoko
+func rehash<K>(set: Set<K>, hashUtils: HashUtils<K>): ();
 ```
 
 If the **Set** is empty, returns immediately. Otherwise, allocates additional space, equal to the **power of 2** that can hold **8/7** of all current keys (either half, equal or double the current capacity) times **12 bytes**. Moves all keys to the new allocated space, while eliminating the holes (unused array indexes). Recalculates the hash table (mapping from a hash to the first **key** in a bucket). Recalculates bucket chains (keys that have equal **hash % Set size** result in a collision and end up in the same bucket). To perform those recalculation, hashes for all keys must also be recalculated.
@@ -2584,7 +2584,7 @@ This method is usually called under the hood on inserts (when the **Set** is ful
 
 # **Iterator** interface description
 
-```ts
+```motoko
 type Iter<T> = {
   prev: () -> ?T;
   next: () -> ?T;
@@ -2603,12 +2603,12 @@ type Iter<T> = {
 
 ### `prev`
 
-```ts
-func prev(): ?K
+```motoko
+func prev(): ?K;
 
-func prev(): ?V
+func prev(): ?V;
 
-func prev(): ?(K, V)
+func prev(): ?(K, V);
 ```
 
 Sets the **started** flag to **true**. If the **Map**/**Set** is empty, returns **null**. Otherwise, moves the iterator pointer to the previous **key**/**value**/**entry** for ascending iterators and to the next **key**/**value**/**entry** for descending iterators and saves the pointer position in the iterator object. If the current **entry** before the pointer move was the **first** **entry** for ascending iterators or the **last** **entry** for descending iterators, the iterator ends up in its initial position and in the finished state, the new iteration cycle can be started and the method returns **null**. Otherwise returns the **key**/**value**/**entry** which becomes current after a pointer move.
@@ -2624,12 +2624,12 @@ Sets the **started** flag to **true**. If the **Map**/**Set** is empty, returns 
 
 ### `next`
 
-```ts
-func next(): ?K
+```motoko
+func next(): ?K;
 
-func next(): ?V
+func next(): ?V;
 
-func next(): ?(K, V)
+func next(): ?(K, V);
 ```
 
 Sets the **started** flag to **true**. If the **Map**/**Set** is empty, returns **null**. Otherwise, moves the iterator pointer to the next **key**/**value**/**entry** for ascending iterators and to the previous **key**/**value**/**entry** for descending iterators and saves the pointer position in the iterator object. If the current **entry** before the pointer move was the **last** **entry** for ascending iterators or the **first** **entry** for descending iterators, the iterator ends up in its initial position and in the finished state, the new iteration cycle can be started and the method returns **null**. Otherwise returns the **key**/**value**/**entry** which becomes current after a pointer move.
@@ -2645,12 +2645,12 @@ Sets the **started** flag to **true**. If the **Map**/**Set** is empty, returns 
 
 ### `peekPrev`
 
-```ts
-func peekPrev(): ?K
+```motoko
+func peekPrev(): ?K;
 
-func peekPrev(): ?V
+func peekPrev(): ?V;
 
-func peekPrev(): ?(K, V)
+func peekPrev(): ?(K, V);
 ```
 
 If the **Map**/**Set** is empty, returns **null**. Otherwise, moves the iterator pointer to the previous **key**/**value**/**entry** for ascending iterators and to the next **key**/**value**/**entry** for descending iterators but doesn't save the pointer position in the iterator object. If the current **entry** before the pointer move was the **first** **entry** for ascending iterators or the **last** **entry** for descending iterators, returns **null**. Otherwise returns the **key**/**value**/**entry** which becomes current after a pointer move.
@@ -2668,12 +2668,12 @@ This operation is the same as [**prev**](#prev) but doesn't save the pointer pos
 
 ### `peekNext`
 
-```ts
-func peekNext(): ?K
+```motoko
+func peekNext(): ?K;
 
-func peekNext(): ?V
+func peekNext(): ?V;
 
-func peekNext(): ?(K, V)
+func peekNext(): ?(K, V);
 ```
 
 If the **Map**/**Set** is empty, returns **null**. Otherwise, moves the iterator pointer to the next **key**/**value**/**entry** for ascending iterators and to the previous **key**/**value**/**entry** for descending iterators but doesn't save the pointer position in the iterator object. If the current **entry** before the pointer move was the **last** **entry** for ascending iterators or the **first** **entry** for descending iterators, returns **null**. Otherwise returns the **key**/**value**/**entry** which becomes current after a pointer move.
@@ -2691,12 +2691,12 @@ This operation is the same as [**next**](#next) but doesn't save the pointer pos
 
 ### `movePrev`
 
-```ts
-func movePrev(): Iter<K>
+```motoko
+func movePrev(): Iter<K>;
 
-func movePrev(): Iter<V>
+func movePrev(): Iter<V>;
 
-func movePrev(): Iter<(K, V)>
+func movePrev(): Iter<(K, V)>;
 ```
 
 Sets the **started** flag to **true**. If the **Map**/**Set** is empty, returns the iterator object. Otherwise, moves the iterator pointer to the previous **key**/**value**/**entry** for ascending iterators and to the next **key**/**value**/**entry** for descending iterators and saves the pointer position in the iterator object. If the current **entry** before the pointer move was the **first** **entry** for ascending iterators or the **last** **entry** for descending iterators, the iterator ends up in its initial position and in the finished state and the new iteration cycle can be started. Returns the iterator object.
@@ -2714,12 +2714,12 @@ This operation is the same as [**prev**](#prev) but always returns the iterator 
 
 ### `moveNext`
 
-```ts
-func moveNext(): Iter<K>
+```motoko
+func moveNext(): Iter<K>;
 
-func moveNext(): Iter<V>
+func moveNext(): Iter<V>;
 
-func moveNext(): Iter<(K, V)>
+func moveNext(): Iter<(K, V)>;
 ```
 
 Sets the **started** flag to **true**. If the **Map**/**Set** is empty, returns the iterator object. Otherwise, moves the iterator pointer to the next **key**/**value**/**entry** for ascending iterators and to the previous **key**/**value**/**entry** for descending iterators and saves the pointer position in the iterator object. If the current **entry** before the pointer move was the **last** **entry** for ascending iterators or the **first** **entry** for descending iterators, the iterator ends up in its initial position and in the finished state and the new iteration cycle can be started. Returns the iterator object.
@@ -2737,12 +2737,12 @@ This operation is the same as [**next**](#next) but always returns the iterator 
 
 ### `current`
 
-```ts
-func current(): ?K
+```motoko
+func current(): ?K;
 
-func current(): ?V
+func current(): ?V;
 
-func current(): ?(K, V)
+func current(): ?(K, V);
 ```
 
 If the **Map**/**Set** is empty or the iterator is in its initial position, returns **null**, otherwise returns the current **key**/**value**/**entry**.
@@ -2758,8 +2758,8 @@ If the **Map**/**Set** is empty or the iterator is in its initial position, retu
 
 ### `started`
 
-```ts
-func started(): Bool
+```motoko
+func started(): Bool;
 ```
 
 Returns **true** if any [**prev**](#prev)/[**next**](#next)/[**movePrev**](#moveprev)/[**moveNext**](#movenext) method was called after the iterator object was created or reset with the [**reset**](#reset) method. Otherwise, returns **false**.
@@ -2775,8 +2775,8 @@ Returns **true** if any [**prev**](#prev)/[**next**](#next)/[**movePrev**](#move
 
 ### `finished`
 
-```ts
-func finished(): Bool
+```motoko
+func finished(): Bool;
 ```
 
 Returns **true** if the iterator was [**started**](#started) (meaning any [**prev**](#prev)/[**next**](#next)/[**movePrev**](#moveprev)/[**moveNext**](#movenext) method was called after the iterator object was created or reset with the [**reset**](#reset) method) and is currently in its initial position. Otherwise, returns **false**.
@@ -2792,12 +2792,12 @@ Returns **true** if the iterator was [**started**](#started) (meaning any [**pre
 
 ### `reset`
 
-```ts
-func reset(): Iter<K>
+```motoko
+func reset(): Iter<K>;
 
-func reset(): Iter<V>
+func reset(): Iter<V>;
 
-func reset(): Iter<(K, V)>
+func reset(): Iter<(K, V)>;
 ```
 
 Resets the **started** flag to **false**. Resets the iterator to its initial position. Returns the iterator object.
@@ -2811,7 +2811,7 @@ Resets the **started** flag to **false**. Resets the iterator to its initial pos
 
 # **Hash Utils**
 
-```ts
+```motoko
 type HashUtils<K> = (
   getHash: (K) -> Nat32,
   areEqual: (K, K) -> Bool,
@@ -2822,8 +2822,8 @@ type HashUtils<K> = (
 
 ### `hashInt`
 
-```ts
-func hashInt(key: Int): Nat32
+```motoko
+func hashInt(key: Int): Nat32;
 ```
 
 Truncates the **key** to a **64 bit** unsigned integer. Calculates the hash using a **64 bit** variant of the **Multiply-Xorshift** hashing technique. Truncates the hash to a **32 bit** unsigned integer. Drops **2** most significant bits of the hash to prevent it going to the heap. Returns the hash.
@@ -2843,8 +2843,8 @@ This function is exposed separately, although most of the time you will be using
 
 ### `hashInt8`
 
-```ts
-func hashInt8(key: Int8): Nat32
+```motoko
+func hashInt8(key: Int8): Nat32;
 ```
 
 Converts the **key** to a **32 bit** unsigned integer. Calculates the hash using a **32 bit** variant of the **Multiply-Xorshift** hashing technique. Drops **2** most significant bits of the hash to prevent it going to the heap. Returns the hash.
@@ -2864,8 +2864,8 @@ This function is exposed separately, although most of the time you will be using
 
 ### `hashInt16`
 
-```ts
-func hashInt16(key: Int16): Nat32
+```motoko
+func hashInt16(key: Int16): Nat32;
 ```
 
 Converts the **key** to a **32 bit** unsigned integer. Calculates the hash using a **32 bit** variant of the **Multiply-Xorshift** hashing technique. Drops **2** most significant bits of the hash to prevent it going to the heap. Returns the hash.
@@ -2885,8 +2885,8 @@ This function is exposed separately, although most of the time you will be using
 
 ### `hashInt32`
 
-```ts
-func hashInt32(key: Int32): Nat32
+```motoko
+func hashInt32(key: Int32): Nat32;
 ```
 
 Converts the **key** to a **32 bit** unsigned integer. Calculates the hash using a **32 bit** variant of the **Multiply-Xorshift** hashing technique. Drops **2** most significant bits of the hash to prevent it going to the heap. Returns the hash.
@@ -2908,8 +2908,8 @@ This function is exposed separately, although most of the time you will be using
 
 ### `hashInt64`
 
-```ts
-func hashInt64(key: Int64): Nat32
+```motoko
+func hashInt64(key: Int64): Nat32;
 ```
 
 Converts the **key** to a **64 bit** unsigned integer. Calculates the hash using a **64 bit** variant of the **Multiply-Xorshift** hashing technique. Truncates the hash to a **32 bit** unsigned integer. Drops **2** most significant bits of the hash to prevent it going to the heap. Returns the hash.
@@ -2929,8 +2929,8 @@ This function is exposed separately, although most of the time you will be using
 
 ### `hashNat`
 
-```ts
-func hashNat(key: Nat): Nat32
+```motoko
+func hashNat(key: Nat): Nat32;
 ```
 
 Truncates the **key** to a **64 bit** unsigned integer. Calculates the hash using a **64 bit** variant of the **Multiply-Xorshift** hashing technique. Truncates the hash to a **32 bit** unsigned integer. Drops **2** most significant bits of the hash to prevent it going to the heap. Returns the hash.
@@ -2950,8 +2950,8 @@ This function is exposed separately, although most of the time you will be using
 
 ### `hashNat8`
 
-```ts
-func hashNat8(key: Nat8): Nat32
+```motoko
+func hashNat8(key: Nat8): Nat32;
 ```
 
 Converts the **key** to a **32 bit** unsigned integer. Calculates the hash using a **32 bit** variant of the **Multiply-Xorshift** hashing technique. Drops **2** most significant bits of the hash to prevent it going to the heap. Returns the hash.
@@ -2971,8 +2971,8 @@ This function is exposed separately, although most of the time you will be using
 
 ### `hashNat16`
 
-```ts
-func hashNat16(key: Nat16): Nat32
+```motoko
+func hashNat16(key: Nat16): Nat32;
 ```
 
 Converts the **key** to a **32 bit** unsigned integer. Calculates the hash using a **32 bit** variant of the **Multiply-Xorshift** hashing technique. Drops **2** most significant bits of the hash to prevent it going to the heap. Returns the hash.
@@ -2992,8 +2992,8 @@ This function is exposed separately, although most of the time you will be using
 
 ### `hashNat32`
 
-```ts
-func hashNat32(key: Nat32): Nat32
+```motoko
+func hashNat32(key: Nat32): Nat32;
 ```
 
 Calculates the hash using a **32 bit** variant of the **Multiply-Xorshift** hashing technique. Drops **2** most significant bits of the hash to prevent it going to the heap. Returns the hash.
@@ -3015,8 +3015,8 @@ This function is exposed separately, although most of the time you will be using
 
 ### `hashNat64`
 
-```ts
-func hashNat64(key: Nat64): Nat32
+```motoko
+func hashNat64(key: Nat64): Nat32;
 ```
 
 Calculates the hash using a **64 bit** variant of the **Multiply-Xorshift** hashing technique. Truncates the hash to a **32 bit** unsigned integer. Drops **2** most significant bits of the hash to prevent it going to the heap. Returns the hash.
@@ -3038,8 +3038,8 @@ This function is exposed separately, although most of the time you will be using
 
 ### `hashText`
 
-```ts
-func hashText(key: Text): Nat32
+```motoko
+func hashText(key: Text): Nat32;
 ```
 
 Converts the **key** to a **UTF-8** encoded blob. Calculates the hash using the internal hash function for blob, which is based on the **CRC32** algorithm. Drops **2** most significant bits of the hash to prevent it going to the heap. Returns the hash.
@@ -3059,8 +3059,8 @@ This function is exposed separately, although most of the time you will be using
 
 ### `hashPrincipal`
 
-```ts
-func hashPrincipal(key: Principal): Nat32
+```motoko
+func hashPrincipal(key: Principal): Nat32;
 ```
 
 Converts the **key** to blob. Calculates the hash using the internal hash function for blob, which is based on the **CRC32** algorithm. Drops **2** most significant bits of the hash to prevent it going to the heap. Returns the hash.
@@ -3078,8 +3078,8 @@ This function is exposed separately, although most of the time you will be using
 
 ### `hashBlob`
 
-```ts
-func hashBlob(key: Blob): Nat32
+```motoko
+func hashBlob(key: Blob): Nat32;
 ```
 
 Calculates the hash using the internal hash function for blob, which is based on the **CRC32** algorithm. Drops **2** most significant bits of the hash to prevent it going to the heap. Returns the hash.
@@ -3097,8 +3097,8 @@ This function is exposed separately, although most of the time you will be using
 
 ### `hashBool`
 
-```ts
-func hashBool(key: Bool): Nat32
+```motoko
+func hashBool(key: Bool): Nat32;
 ```
 
 Returns numeric alternatives for **true** and **false** values.
@@ -3116,8 +3116,8 @@ This function is exposed separately, although most of the time you will be using
 
 ### `ihash`
 
-```ts
-let ihash: HashUtils<Int> = (hashInt, areEqual)
+```motoko
+let ihash: HashUtils<Int> = (hashInt, areEqual);
 ```
 
 Composite utils for **Int** keys that allow calculating hashes using [**hashInt**](#hashint) function and checking equality.
@@ -3128,8 +3128,8 @@ A lot of **Map**/**Set** methods require [**Hash Utils**](#hash-utils-1) to be p
 
 ### `i8hash`
 
-```ts
-let i8hash: HashUtils<Int8> = (hashInt8, areEqual)
+```motoko
+let i8hash: HashUtils<Int8> = (hashInt8, areEqual);
 ```
 
 Composite utils for **Int8** keys that allow calculating hashes using [**hashInt8**](#hashint8) function and checking equality.
@@ -3140,8 +3140,8 @@ A lot of **Map**/**Set** methods require [**Hash Utils**](#hash-utils-1) to be p
 
 ### `i16hash`
 
-```ts
-let i16hash: HashUtils<Int16> = (hashInt16, areEqual)
+```motoko
+let i16hash: HashUtils<Int16> = (hashInt16, areEqual);
 ```
 
 Composite utils for **Int16** keys that allow calculating hashes using [**hashInt16**](#hashint16) function and checking equality.
@@ -3152,8 +3152,8 @@ A lot of **Map**/**Set** methods require [**Hash Utils**](#hash-utils-1) to be p
 
 ### `i32hash`
 
-```ts
-let i32hash: HashUtils<Int32> = (hashInt32, areEqual)
+```motoko
+let i32hash: HashUtils<Int32> = (hashInt32, areEqual);
 ```
 
 Composite utils for **Int32** keys that allow calculating hashes using [**hashInt32**](#hashint32) function and checking equality.
@@ -3164,8 +3164,8 @@ A lot of **Map**/**Set** methods require [**Hash Utils**](#hash-utils-1) to be p
 
 ### `i64hash`
 
-```ts
-let i64hash: HashUtils<Int64> = (hashInt64, areEqual)
+```motoko
+let i64hash: HashUtils<Int64> = (hashInt64, areEqual);
 ```
 
 Composite utils for **Int64** keys that allow calculating hashes using [**hashInt64**](#hashint64) function and checking equality.
@@ -3176,8 +3176,8 @@ A lot of **Map**/**Set** methods require [**Hash Utils**](#hash-utils-1) to be p
 
 ### `nhash`
 
-```ts
-let nhash: HashUtils<Nat> = (hashNat, areEqual)
+```motoko
+let nhash: HashUtils<Nat> = (hashNat, areEqual);
 ```
 
 Composite utils for **Nat** keys that allow calculating hashes using [**hashNat**](#hashnat) function and checking equality.
@@ -3188,8 +3188,8 @@ A lot of **Map**/**Set** methods require [**Hash Utils**](#hash-utils-1) to be p
 
 ### `n8hash`
 
-```ts
-let n8hash: HashUtils<Nat8> = (hashNat8, areEqual)
+```motoko
+let n8hash: HashUtils<Nat8> = (hashNat8, areEqual);
 ```
 
 Composite utils for **Nat8** keys that allow calculating hashes using [**hashNat8**](#hashnat8) function and checking equality.
@@ -3200,8 +3200,8 @@ A lot of **Map**/**Set** methods require [**Hash Utils**](#hash-utils-1) to be p
 
 ### `n16hash`
 
-```ts
-let n16hash: HashUtils<Nat16> = (hashNat16, areEqual)
+```motoko
+let n16hash: HashUtils<Nat16> = (hashNat16, areEqual);
 ```
 
 Composite utils for **Nat16** keys that allow calculating hashes using [**hashNat16**](#hashnat16) function and checking equality.
@@ -3212,8 +3212,8 @@ A lot of **Map**/**Set** methods require [**Hash Utils**](#hash-utils-1) to be p
 
 ### `n32hash`
 
-```ts
-let n32hash: HashUtils<Nat32> = (hashNat32, areEqual)
+```motoko
+let n32hash: HashUtils<Nat32> = (hashNat32, areEqual);
 ```
 
 Composite utils for **Nat32** keys that allow calculating hashes using [**hashNat32**](#hashnat32) function and checking equality.
@@ -3224,8 +3224,8 @@ A lot of **Map**/**Set** methods require [**Hash Utils**](#hash-utils-1) to be p
 
 ### `n64hash`
 
-```ts
-let n64hash: HashUtils<Nat64> = (hashNat64, areEqual)
+```motoko
+let n64hash: HashUtils<Nat64> = (hashNat64, areEqual);
 ```
 
 Composite utils for **Nat64** keys that allow calculating hashes using [**hashNat64**](#hashnat64) function and checking equality.
@@ -3236,8 +3236,8 @@ A lot of **Map**/**Set** methods require [**Hash Utils**](#hash-utils-1) to be p
 
 ### `thash`
 
-```ts
-let thash: HashUtils<Text> = (hashText, areEqual)
+```motoko
+let thash: HashUtils<Text> = (hashText, areEqual);
 ```
 
 Composite utils for **Text** keys that allow calculating hashes using [**hashText**](#hashtext) function and checking equality.
@@ -3248,8 +3248,8 @@ A lot of **Map**/**Set** methods require [**Hash Utils**](#hash-utils-1) to be p
 
 ### `phash`
 
-```ts
-let phash: HashUtils<Principal> = (hashPrincipal, areEqual)
+```motoko
+let phash: HashUtils<Principal> = (hashPrincipal, areEqual);
 ```
 
 Composite utils for **Principal** keys that allow calculating hashes using [**hashPrincipal**](#hashprincipal) function and checking equality.
@@ -3260,8 +3260,8 @@ A lot of **Map**/**Set** methods require [**Hash Utils**](#hash-utils-1) to be p
 
 ### `bhash`
 
-```ts
-let bhash: HashUtils<Blob> = (hashBlob, areEqual)
+```motoko
+let bhash: HashUtils<Blob> = (hashBlob, areEqual);
 ```
 
 Composite utils for **Blob** keys that allow calculating hashes using [**hashBlob**](#hashblob) function and checking equality.
@@ -3272,8 +3272,8 @@ A lot of **Map**/**Set** methods require [**Hash Utils**](#hash-utils-1) to be p
 
 ### `lhash`
 
-```ts
-let lhash: HashUtils<Bool> = (hashBool, areEqual)
+```motoko
+let lhash: HashUtils<Bool> = (hashBool, areEqual);
 ```
 
 Composite utils for **Bool** keys that allow calculating hashes using [**hashBool**](#hashbool) function and checking equality.
@@ -3284,8 +3284,8 @@ A lot of **Map**/**Set** methods require [**Hash Utils**](#hash-utils-1) to be p
 
 ### `combineHash`
 
-```ts
-func combineHash<K1, K2>(hashUtils1: HashUtils<K1>, hashUtils2: HashUtils<K2>): HashUtils<(K1, K2)>
+```motoko
+func combineHash<K1, K2>(hashUtils1: HashUtils<K1>, hashUtils2: HashUtils<K2>): HashUtils<(K1, K2)>;
 ```
 
 Constructs new [**Hash Utils**](#hash-utils-1) capable of handling composite keys (tuples of **2** components). Takes **2** [**Hash Utils**](#hash-utils-1) as an input which will handle the first and the second component of a composite **key** separately. The combined [**Hash Utils**](#hash-utils-1) will handle the merging of both hashes and ensuring that equality function returns **true** only when both components are equal. Returns the new [**Hash Utils**](#hash-utils-1).
@@ -3301,8 +3301,8 @@ Constructs new [**Hash Utils**](#hash-utils-1) capable of handling composite key
 
 ### `useHash`
 
-```ts
-func useHash<K>(hashUtils: HashUtils<K>, hash: Nat32): HashUtils<K>
+```motoko
+func useHash<K>(hashUtils: HashUtils<K>, hash: Nat32): HashUtils<K>;
 ```
 
 Constructs new [**Hash Utils**](#hash-utils-1) with its hashing component being a function that returns a constant hash provided as a second argument and its equality component equal to the provided [**Hash Utils**](#hash-utils-1). Returns the new [**Hash Utils**](#hash-utils-1).
@@ -3320,8 +3320,8 @@ Constructs new [**Hash Utils**](#hash-utils-1) with its hashing component being 
 
 ### `calcHash`
 
-```ts
-func calcHash<K>(hashUtils: HashUtils<K>, key: K): HashUtils<K>
+```motoko
+func calcHash<K>(hashUtils: HashUtils<K>, key: K): HashUtils<K>;
 ```
 
 Constructs new [**Hash Utils**](#hash-utils-1) with its hashing component being a function that returns a constant hash calculated from the provided **key** and its equality component equal to the provided [**Hash Utils**](#hash-utils-1). Returns the new [**Hash Utils**](#hash-utils-1).
