@@ -791,7 +791,7 @@ If the provided **key** is present in the **Map**, removes the corresponding **(
 
 Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
-If the size of the **Map** after the deletion is less than **3 / 8 of capacity**, [**rehash**](#rehash) will happen, meaning additional space will be allocated, equal to the **power of 2** that can hold **8/7** of all current entries (either equal or double the current capacity) times **16 bytes**, all entries will be moved to the new allocated space, holes will be eliminated and the operation time will be proportional to the **Map** size.
+If the size of the **Map** after the deletion is less than **3 / 8 of capacity**, [**rehash**](#rehash) will happen, meaning additional space will be allocated, equal to the **power of 2** that can hold **8/7** of all current entries (half the current capacity) times **16 bytes**, all entries will be moved to the new allocated space, holes will be eliminated and the operation time will be proportional to the **Map** size.
 
 If [**rehash**](#rehash) is not called and the **entry** is being removed from the **front** or the **back** of the **Map**, all holes before the new **first** or after the new **last** **entry** will be eliminated.
 
@@ -818,7 +818,7 @@ This operation is the same as [**remove**](#remove) but doesn't have a return va
 
 Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
-If the size of the **Map** after the deletion is less than **3 / 8 of capacity**, [**rehash**](#rehash) will happen, meaning additional space will be allocated, equal to the **power of 2** that can hold **8/7** of all current entries (either equal or double the current capacity) times **16 bytes**, all entries will be moved to the new allocated space, holes will be eliminated and the operation time will be proportional to the **Map** size.
+If the size of the **Map** after the deletion is less than **3 / 8 of capacity**, [**rehash**](#rehash) will happen, meaning additional space will be allocated, equal to the **power of 2** that can hold **8/7** of all current entries (half the current capacity) times **16 bytes**, all entries will be moved to the new allocated space, holes will be eliminated and the operation time will be proportional to the **Map** size.
 
 If [**rehash**](#rehash) is not called and the **entry** is being removed from the **front** or the **back** of the **Map**, all holes before the new **first** or after the new **last** **entry** will be eliminated.
 
@@ -877,7 +877,7 @@ If the **Map** is not empty, removes the **last** **(key, value)** pair in the *
 
 Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
-If the size of the **Map** after the deletion is less than **3 / 8 of capacity**, [**rehash**](#rehash) will happen, meaning additional space will be allocated, equal to the **power of 2** that can hold **8/7** of all current entries (either equal or double the current capacity) times **16 bytes**, all entries will be moved to the new allocated space, holes will be eliminated and the operation time will be proportional to the **Map** size.
+If the size of the **Map** after the deletion is less than **3 / 8 of capacity**, [**rehash**](#rehash) will happen, meaning additional space will be allocated, equal to the **power of 2** that can hold **8/7** of all current entries (half the current capacity) times **16 bytes**, all entries will be moved to the new allocated space, holes will be eliminated and the operation time will be proportional to the **Map** size.
 
 If [**rehash**](#rehash) is not called, all holes after the new **last** **entry** will be eliminated.
 
@@ -902,7 +902,7 @@ If the **Map** is not empty, removes the **first** **(key, value)** pair in the 
 
 Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
-If the size of the **Map** after the deletion is less than **3 / 8 of capacity**, [**rehash**](#rehash) will happen, meaning additional space will be allocated, equal to the **power of 2** that can hold **8/7** of all current entries (either equal or double the current capacity) times **16 bytes**, all entries will be moved to the new allocated space, holes will be eliminated and the operation time will be proportional to the **Map** size.
+If the size of the **Map** after the deletion is less than **3 / 8 of capacity**, [**rehash**](#rehash) will happen, meaning additional space will be allocated, equal to the **power of 2** that can hold **8/7** of all current entries (half the current capacity) times **16 bytes**, all entries will be moved to the new allocated space, holes will be eliminated and the operation time will be proportional to the **Map** size.
 
 If [**rehash**](#rehash) is not called, all holes before the new **first** **entry** will be eliminated.
 
@@ -1965,7 +1965,7 @@ If the provided **key** is present in the **Set**, removes it from the **Set** a
 
 Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
-If the size of the **Set** after the deletion is less than **3 / 8 of capacity**, [**rehash**](#rehash-1) will happen, meaning additional space will be allocated, equal to the **power of 2** that can hold **8/7** of all current keys (either equal or double the current capacity) times **12 bytes**, all keys will be moved to the new allocated space, holes will be eliminated and the operation time will be proportional to the **Set** size.
+If the size of the **Set** after the deletion is less than **3 / 8 of capacity**, [**rehash**](#rehash-1) will happen, meaning additional space will be allocated, equal to the **power of 2** that can hold **8/7** of all current keys (half the current capacity) times **12 bytes**, all keys will be moved to the new allocated space, holes will be eliminated and the operation time will be proportional to the **Set** size.
 
 If [**rehash**](#rehash-1) is not called and the **key** is being removed from the **front** or the **back** of the **Set**, all holes before the new **first** or after the new **last** **key** will be eliminated.
 
@@ -1992,7 +1992,7 @@ This operation is the same as [**remove**](#remove-1) but doesn't have a return 
 
 Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
-If the size of the **Set** after the deletion is less than **3 / 8 of capacity**, [**rehash**](#rehash-1) will happen, meaning additional space will be allocated, equal to the **power of 2** that can hold **8/7** of all current keys (either equal or double the current capacity) times **12 bytes**, all keys will be moved to the new allocated space, holes will be eliminated and the operation time will be proportional to the **Set** size.
+If the size of the **Set** after the deletion is less than **3 / 8 of capacity**, [**rehash**](#rehash-1) will happen, meaning additional space will be allocated, equal to the **power of 2** that can hold **8/7** of all current keys (half the current capacity) times **12 bytes**, all keys will be moved to the new allocated space, holes will be eliminated and the operation time will be proportional to the **Set** size.
 
 If [**rehash**](#rehash-1) is not called and the **key** is being removed from the **front** or the **back** of the **Set**, all holes before the new **first** or after the new **last** **key** will be eliminated.
 
@@ -2051,7 +2051,7 @@ If the **Set** is not empty, removes the **last** **key** in the **Set** and ret
 
 Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
-If the size of the **Set** after the deletion is less than **3 / 8 of capacity**, [**rehash**](#rehash-1) will happen, meaning additional space will be allocated, equal to the **power of 2** that can hold **8/7** of all current keys (either equal or double the current capacity) times **12 bytes**, all keys will be moved to the new allocated space, holes will be eliminated and the operation time will be proportional to the **Set** size.
+If the size of the **Set** after the deletion is less than **3 / 8 of capacity**, [**rehash**](#rehash-1) will happen, meaning additional space will be allocated, equal to the **power of 2** that can hold **8/7** of all current keys (half the current capacity) times **12 bytes**, all keys will be moved to the new allocated space, holes will be eliminated and the operation time will be proportional to the **Set** size.
 
 If [**rehash**](#rehash-1) is not called, all holes after the new **last** **key** will be eliminated.
 
@@ -2076,7 +2076,7 @@ If the **Set** is not empty, removes the **first** **key** in the **Set** and re
 
 Requires [**Hash Utils**](#hash-utils-1) to be provided as the second argument.
 
-If the size of the **Set** after the deletion is less than **3 / 8 of capacity**, [**rehash**](#rehash-1) will happen, meaning additional space will be allocated, equal to the **power of 2** that can hold **8/7** of all current keys (either equal or double the current capacity) times **12 bytes**, all keys will be moved to the new allocated space, holes will be eliminated and the operation time will be proportional to the **Set** size.
+If the size of the **Set** after the deletion is less than **3 / 8 of capacity**, [**rehash**](#rehash-1) will happen, meaning additional space will be allocated, equal to the **power of 2** that can hold **8/7** of all current keys (half the current capacity) times **12 bytes**, all keys will be moved to the new allocated space, holes will be eliminated and the operation time will be proportional to the **Set** size.
 
 If [**rehash**](#rehash-1) is not called, all holes before the new **first** **key** will be eliminated.
 
